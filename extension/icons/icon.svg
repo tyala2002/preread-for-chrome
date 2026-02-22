@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- 背景 -->
+  <rect width="128" height="128" rx="20" fill="#1a73e8"/>
+  <!-- 本のシルエット -->
+  <rect x="24" y="28" width="38" height="72" rx="4" fill="#fff" opacity="0.95"/>
+  <rect x="66" y="28" width="38" height="72" rx="4" fill="#fff" opacity="0.85"/>
+  <!-- 本の背表紙ライン -->
+  <rect x="60" y="28" width="8" height="72" rx="2" fill="#1557b0"/>
+  <!-- 再生ボタン（YouTube） -->
+  <circle cx="85" cy="64" r="16" fill="#ff0000" opacity="0.9"/>
+  <polygon points="80,57 95,64 80,71" fill="#fff"/>
+  <!-- ページライン（左の本） -->
+  <rect x="30" y="48" width="26" height="3" rx="1.5" fill="#e8f0fe"/>
+  <rect x="30" y="56" width="22" height="3" rx="1.5" fill="#e8f0fe"/>
+  <rect x="30" y="64" width="24" height="3" rx="1.5" fill="#e8f0fe"/>
+</svg>

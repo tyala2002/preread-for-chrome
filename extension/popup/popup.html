@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preread</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ヘッダー
+  ═══════════════════════════════════════════════════════════ -->
+  <header class="header">
+    <div class="header-logo">
+      <img src="../icons/icon48.png" alt="Preread" class="header-icon" />
+      <span class="header-title">Preread</span>
+    </div>
+    <a href="#" id="btn-open-options" class="header-settings" title="設定">⚙️</a>
+  </header>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       書籍タイトル表示エリア
+  ═══════════════════════════════════════════════════════════ -->
+  <section class="book-section">
+    <div class="book-title-row">
+      <span class="label">書籍タイトル</span>
+      <button id="btn-edit-title" class="btn-text" title="タイトルを編集">✏️</button>
+    </div>
+    <!-- タイトル表示（通常時） -->
+    <p id="book-title-display" class="book-title">—</p>
+    <!-- タイトル手入力（編集モード） -->
+    <input
+      id="book-title-input"
+      type="text"
+      class="book-title-input hidden"
+      placeholder="書籍タイトルを入力してください"
+    />
+    <!-- Amazonページ以外で開いたときの警告 -->
+    <p id="msg-not-amazon" class="msg-warning hidden">
+      ⚠️ Amazonの書籍ページで開いてください
+    </p>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       検索ボタン
+  ═══════════════════════════════════════════════════════════ -->
+  <div class="search-row">
+    <button id="btn-search" class="btn-primary" disabled>
+      🔍 ソースを検索
+    </button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       ローディングスピナー
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="loading" class="loading hidden">
+    <div class="spinner"></div>
+    <span id="loading-text">検索中...</span>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       APIキー未設定警告
+  ═══════════════════════════════════════════════════════════ -->
+  <div id="msg-no-api-key" class="msg-error hidden">
+    <p>⚠️ APIキーが設定されていません。</p>
+    <button id="btn-go-options" class="btn-secondary">設定画面を開く</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+       検索結果エリア（検索完了後に表示）
+  ═══════════════════════════════════════════════════════════ -->
+  <section id="results-section" class="results-section hidden">
+
+    <!-- 全選択 / 全解除 -->
+    <div class="select-controls">
+      <button id="btn-select-all" class="btn-text">全選択</button>
+      <span class="divider">|</span>
+      <button id="btn-deselect-all" class="btn-text">全解除</button>
+    </div>
+
+    <!-- ── Web記事セクション ──────────────────────────── -->
+    <div class="source-group">
+      <h3 class="source-group-title">📄 Web記事</h3>
+      <ul id="list-articles" class="source-list">
+        <!-- JS で動的に生成される -->
+      </ul>
+    </div>
+
+    <!-- ── YouTube動画セクション ─────────────────────── -->
+    <div class="source-group">
+      <h3 class="source-group-title">▶️ YouTube動画</h3>
+      <ul id="list-videos" class="source-list">
+        <!-- JS で動的に生成される -->
+      </ul>
+    </div>
+
+    <!-- ── アクションボタン群 ─────────────────────────── -->
+    <div class="action-buttons">
+      <!-- クリップボードコピー -->
+      <button id="btn-copy-urls" class="btn-secondary">
+        📋 URLをコピー
+      </button>
+      <!-- NotebookLMへ追加 -->
+      <button id="btn-add-to-notebooklm" class="btn-primary">
+        ➕ NotebookLMに追加
+      </button>
+    </div>
+
+    <!-- ── 進捗バー（NotebookLM追加中） ───────────────── -->
+    <div id="progress-area" class="progress-area hidden">
+      <div class="progress-bar-track">
+        <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%"></div>
+      </div>
+      <p id="progress-text" class="progress-text">0 / 0 件追加中...</p>
+    </div>
+
+    <!-- ── 完了メッセージ ─────────────────────────────── -->
+    <div id="msg-success" class="msg-success hidden">
+      ✅ <span id="success-count">0</span> 件のソースを追加しました
+    </div>
+
+    <!-- ── ノートブックリンク（追加完了後に表示） ────── -->
+    <div id="notebook-link-area" class="notebook-link-area hidden">
+      <a id="notebook-link" href="#" target="_blank" class="btn-notebook-link">
+        📖 NotebookLMで開く →
+      </a>
+    </div>
+
+    <!-- ── エラー一覧（失敗したURL） ──────────────────── -->
+    <div id="error-area" class="error-area hidden">
+      <p class="error-title">⚠️ 以下のURLの追加に失敗しました：</p>
+      <ul id="list-errors" class="error-list"></ul>
+      <button id="btn-retry-failed" class="btn-secondary">
+        🔄 失敗分を再試行
+      </button>
+    </div>
+
+  </section>
+
+  <script src="popup.js"></script>
+</body>
+</html>

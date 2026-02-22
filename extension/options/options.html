@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preread — 設定</title>
+  <style>
+    /* ─ 設定ページスタイル ─────────────────────────────────────────── */
+    :root {
+      --color-primary: #1a73e8;
+      --color-primary-dark: #1557b0;
+      --color-primary-light: #e8f0fe;
+      --color-border: #dadce0;
+      --color-success: #188038;
+      --color-error: #d93025;
+      --color-text: #202124;
+      --color-text-sub: #5f6368;
+      --radius: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Google Sans', 'Noto Sans JP', sans-serif;
+      font-size: 14px;
+      color: var(--color-text);
+      background: #f8f9fa;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      background: var(--color-primary);
+      color: #fff;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-header h1 {
+      font-size: 20px;
+      font-weight: 500;
+    }
+
+    .page-header .subtitle {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px;
+    }
+
+    /* セクションカード */
+    .card {
+      background: #fff;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      padding: 20px 24px;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--color-text);
+      margin-bottom: 4px;
+    }
+
+    .card-desc {
+      font-size: 12px;
+      color: var(--color-text-sub);
+      margin-bottom: 16px;
+      line-height: 1.5;
+    }
+
+    /* フォームフィールド */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group:last-of-type {
+      margin-bottom: 0;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--color-text);
+      margin-bottom: 6px;
+    }
+
+    .label-note {
+      font-weight: 400;
+      color: var(--color-text-sub);
+      font-size: 12px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--color-text);
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(26,115,232,0.25);
+    }
+
+    .field-help {
+      font-size: 11px;
+      color: var(--color-text-sub);
+      margin-top: 4px;
+    }
+
+    .field-help a {
+      color: var(--color-primary);
+    }
+
+    /* 保存ボタン */
+    .btn-save {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 24px;
+      background: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-top: 20px;
+    }
+
+    .btn-save:hover { background: var(--color-primary-dark); }
+
+    /* 保存完了メッセージ */
+    .msg-saved {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      margin-top: 12px;
+      font-size: 13px;
+      color: var(--color-success);
+      font-weight: 500;
+    }
+
+    .msg-saved.show { display: flex; }
+
+    /* ラジオグループ（検索プロバイダ選択） */
+    .radio-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-option {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid var(--color-border);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+    }
+
+    .radio-option:has(input:checked) {
+      border-color: var(--color-primary);
+      background: var(--color-primary-light);
+    }
+
+    .radio-option input[type="radio"] {
+      width: auto;
+      margin-top: 2px;
+      accent-color: var(--color-primary);
+    }
+
+    .radio-option-label {
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .radio-option-desc {
+      font-size: 12px;
+      color: var(--color-text-sub);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── ヘッダー ────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div>
+      <h1>⚙️ Preread 設定</h1>
+      <p class="subtitle">APIキーとオプションを設定してください</p>
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- ── YouTube Data API ───────────────────────────────────── -->
+    <div class="card">
+      <h2 class="card-title">🎬 YouTube Data API</h2>
+      <p class="card-desc">
+        YouTube動画を検索するためのAPIキーを入力してください。<br>
+        Google Cloud ConsoleでYouTube Data API v3を有効にして、APIキーを取得してください。
+      </p>
+
+      <div class="form-group">
+        <label for="youtube-api-key">
+          YouTube Data API v3 キー
+          <span class="label-note">（必須：YouTube動画検索に使用）</span>
+        </label>
+        <input
+          type="password"
+          id="youtube-api-key"
+          placeholder="AIzaSy..."
+          autocomplete="off"
+        />
+        <p class="field-help">
+          取得方法:
+          <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>
+          → APIとサービス → 認証情報 → APIキーを作成
+        </p>
+      </div>
+    </div>
+
+    <!-- ── Web記事検索API ─────────────────────────────────────── -->
+    <div class="card">
+      <h2 class="card-title">🔍 Web記事検索API</h2>
+      <p class="card-desc">
+        要約・レビュー記事を検索するためのAPIを選択してください。<br>
+        Google Custom Search API または SerpAPI のどちらかを使用できます。
+      </p>
+
+      <!-- 検索プロバイダ選択 -->
+      <div class="form-group">
+        <label>検索プロバイダを選択</label>
+        <div class="radio-group">
+          <label class="radio-option">
+            <input type="radio" name="search-provider" value="google" checked />
+            <div>
+              <div class="radio-option-label">Google Custom Search API</div>
+              <div class="radio-option-desc">
+                無料枠: 100クエリ/日。Google公式のAPIで安定性が高い。<br>
+                Programmable Search Engineの設定が別途必要。
+              </div>
+            </div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="search-provider" value="serpapi" />
+            <div>
+              <div class="radio-option-label">SerpAPI</div>
+              <div class="radio-option-desc">
+                無料枠: 100クエリ/月。セットアップが簡単（エンジンID不要）。
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- Google Custom Search のフィールド -->
+      <div id="google-search-fields">
+        <div class="form-group">
+          <label for="search-api-key">
+            Google Custom Search APIキー
+          </label>
+          <input
+            type="password"
+            id="search-api-key"
+            placeholder="AIzaSy..."
+            autocomplete="off"
+          />
+        </div>
+        <div class="form-group">
+          <label for="search-engine-id">
+            カスタム検索エンジン ID (cx)
+          </label>
+          <input
+            type="text"
+            id="search-engine-id"
+            placeholder="012345678901234567890:abcdefghijk"
+          />
+          <p class="field-help">
+            <a href="https://programmablesearchengine.google.com/" target="_blank">
+              Programmable Search Engine
+            </a> で「ウェブ全体を検索」に設定したエンジンのIDを入力してください。
+          </p>
+        </div>
+      </div>
+
+      <!-- SerpAPI のフィールド -->
+      <div id="serpapi-fields" style="display:none">
+        <div class="form-group">
+          <label for="serpapi-key">
+            SerpAPI キー
+          </label>
+          <input
+            type="password"
+            id="serpapi-key"
+            placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            autocomplete="off"
+          />
+          <p class="field-help">
+            <a href="https://serpapi.com/dashboard" target="_blank">SerpAPI ダッシュボード</a>
+            でAPIキーを確認してください。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 保存ボタン ─────────────────────────────────────────── -->
+    <button id="btn-save" class="btn-save">
+      💾 設定を保存
+    </button>
+    <div id="msg-saved" class="msg-saved">
+      ✅ 設定を保存しました
+    </div>
+
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
