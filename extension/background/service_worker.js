@@ -29,6 +29,9 @@ const CUSTOM_SEARCH_API_URL = 'https://www.googleapis.com/customsearch/v1';
 /** SerpAPI のエンドポイント */
 const SERP_API_URL = 'https://serpapi.com/search.json';
 
+/** Tavily Search API のエンドポイント */
+const TAVILY_SEARCH_API_URL = 'https://api.tavily.com/search';
+
 /** NotebookLM の URL */
 const NOTEBOOKLM_URL = 'https://notebooklm.google.com/';
 
@@ -102,15 +105,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleSearchSources({ bookTitle }) {
   // APIキーを取得
-  const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider } =
+  const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider, braveApiKey } =
     await chrome.storage.sync.get([
       'youtubeApiKey',
       'searchApiKey',
       'searchEngineId',
       'searchProvider',
+      'braveApiKey',
     ]);
 
-  if (!youtubeApiKey && !searchApiKey) {
+  const hasWebSearchKey = braveApiKey || searchApiKey;
+  if (!youtubeApiKey && !hasWebSearchKey) {
     throw new Error('NO_API_KEY');
   }
 
@@ -118,12 +123,12 @@ async function handleSearchSources({ bookTitle }) {
 
   // Web記事とYouTube動画を並行して検索する
   const [articles, videos] = await Promise.allSettled([
-    searchApiKey
-      ? searchWebArticles(bookTitle, searchApiKey, searchEngineId, searchProvider)
-      : Promise.resolve([]),
+    hasWebSearchKey
+      ? searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider })
+      : Promise.resolve({ results: [], errors: [] }),
     youtubeApiKey
       ? searchYouTubeVideos(bookTitle, youtubeApiKey)
-      : Promise.resolve([]),
+      : Promise.resolve({ results: [], errors: [] }),
   ]);
 
   const articleData = articles.status === 'fulfilled'
@@ -144,7 +149,9 @@ async function handleSearchSources({ bookTitle }) {
 }
 
 /**
- * Google Custom Search API または SerpAPI でWeb記事を検索する
+ * Web記事を検索する（Tavily / Google Custom Search / SerpAPI に対応）
+ *
+ * 優先順位: Tavily → Google Custom Search → SerpAPI
  *
  * 検索クエリ:
  *   - "{タイトル} 要約"
@@ -152,12 +159,10 @@ async function handleSearchSources({ bookTitle }) {
  *   - "{タイトル} まとめ"
  *
  * @param {string} bookTitle
- * @param {string} apiKey
- * @param {string} [engineId] - Google Custom Search の検索エンジンID
- * @param {'google'|'serpapi'} [provider='google']
+ * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string }} keys
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchWebArticles(bookTitle, apiKey, engineId, provider = 'google') {
+async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google' }) {
   const queries = [
     `${bookTitle} 要約`,
     `${bookTitle} レビュー`,
@@ -170,10 +175,12 @@ async function searchWebArticles(bookTitle, apiKey, engineId, provider = 'google
   for (const query of queries) {
     try {
       let results;
-      if (provider === 'serpapi') {
-        results = await searchWithSerpApi(query, apiKey);
+      if (braveApiKey) {
+        results = await searchWithTavily(query, braveApiKey);
+      } else if (searchProvider === 'serpapi') {
+        results = await searchWithSerpApi(query, searchApiKey);
       } else {
-        results = await searchWithGoogleCustomSearch(query, apiKey, engineId);
+        results = await searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId);
       }
       allResults.push(...results);
     } catch (err) {
@@ -187,6 +194,44 @@ async function searchWebArticles(bookTitle, apiKey, engineId, provider = 'google
     results: deduplicateAndFilter(allResults).slice(0, MAX_ARTICLE_RESULTS),
     errors,
   };
+}
+
+/**
+ * Tavily Search API でWeb記事を検索する
+ *
+ * ⚠️ API変更注意ポイント:
+ *   エンドポイントやレスポンス形式が変わった場合はここを更新する。
+ *
+ * @param {string} query
+ * @param {string} apiKey
+ * @returns {Promise<SearchResult[]>}
+ */
+async function searchWithTavily(query, apiKey) {
+  const response = await fetch(TAVILY_SEARCH_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      api_key: apiKey,
+      query,
+      search_depth: 'basic',
+      max_results: 5,
+      include_answer: false,
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`Tavily APIエラー: ${response.status} - ${err.message || ''}`);
+  }
+
+  const data = await response.json();
+  return (data.results || []).map(item => ({
+    title: item.title,
+    url: item.url,
+    snippet: item.content,
+  }));
 }
 
 /**

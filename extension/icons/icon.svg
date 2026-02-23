@@ -1,16 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- 背景 -->
-  <rect width="128" height="128" rx="20" fill="#1a73e8"/>
-  <!-- 本のシルエット -->
-  <rect x="24" y="28" width="38" height="72" rx="4" fill="#fff" opacity="0.95"/>
-  <rect x="66" y="28" width="38" height="72" rx="4" fill="#fff" opacity="0.85"/>
-  <!-- 本の背表紙ライン -->
-  <rect x="60" y="28" width="8" height="72" rx="2" fill="#1557b0"/>
-  <!-- 再生ボタン（YouTube） -->
-  <circle cx="85" cy="64" r="16" fill="#ff0000" opacity="0.9"/>
-  <polygon points="80,57 95,64 80,71" fill="#fff"/>
-  <!-- ページライン（左の本） -->
-  <rect x="30" y="48" width="26" height="3" rx="1.5" fill="#e8f0fe"/>
-  <rect x="30" y="56" width="22" height="3" rx="1.5" fill="#e8f0fe"/>
-  <rect x="30" y="64" width="24" height="3" rx="1.5" fill="#e8f0fe"/>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4facfe" />
+      <stop offset="100%" stop-color="#00f2fe" />
+    </linearGradient>
+    <linearGradient id="book-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#1e3a8a" />
+    </linearGradient>
+  </defs>
+  
+  <!-- 背景角丸 -->
+  <rect width="128" height="128" rx="28" fill="url(#book-grad)" />
+  
+  <!-- 本のシンボル -->
+  <path d="M 32 40 h 16 a 12 12 0 0 1 12 12 v 44 a 10 10 0 0 0 -10 -10 H 32 z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 96 40 H 80 a 12 12 0 0 0 -12 12 v 44 a 10 10 0 0 1 10 -10 h 18 z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- AIスパークル (ひらめき・星) -->
+  <path d="M 64 16 L 68 32 L 84 36 L 68 40 L 64 56 L 60 40 L 44 36 L 60 32 Z" fill="#93c5fd" />
+  <circle cx="86" cy="20" r="4" fill="#93c5fd" />
 </svg>

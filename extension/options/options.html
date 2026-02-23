@@ -215,39 +215,12 @@
 
   <div class="container">
 
-    <!-- ── YouTube Data API ───────────────────────────────────── -->
-    <div class="card">
-      <h2 class="card-title">🎬 YouTube Data API</h2>
-      <p class="card-desc">
-        YouTube動画を検索するためのAPIキーを入力してください。<br>
-        Google Cloud ConsoleでYouTube Data API v3を有効にして、APIキーを取得してください。
-      </p>
-
-      <div class="form-group">
-        <label for="youtube-api-key">
-          YouTube Data API v3 キー
-          <span class="label-note">（必須：YouTube動画検索に使用）</span>
-        </label>
-        <input
-          type="password"
-          id="youtube-api-key"
-          placeholder="AIzaSy..."
-          autocomplete="off"
-        />
-        <p class="field-help">
-          取得方法:
-          <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>
-          → APIとサービス → 認証情報 → APIキーを作成
-        </p>
-      </div>
-    </div>
-
     <!-- ── Web記事検索API ─────────────────────────────────────── -->
     <div class="card">
       <h2 class="card-title">🔍 Web記事検索API</h2>
       <p class="card-desc">
         要約・レビュー記事を検索するためのAPIを選択してください。<br>
-        Google Custom Search API または SerpAPI のどちらかを使用できます。
+        <strong>Tavily Search API</strong> が最も簡単に設定できるためおすすめです。
       </p>
 
       <!-- 検索プロバイダ選択 -->
@@ -255,12 +228,23 @@
         <label>検索プロバイダを選択</label>
         <div class="radio-group">
           <label class="radio-option">
-            <input type="radio" name="search-provider" value="google" checked />
+            <input type="radio" name="search-provider" value="brave" checked />
+            <div>
+              <div class="radio-option-label">
+                Tavily Search API
+                <span style="margin-left:6px; padding:1px 7px; background:#1a73e8; color:#fff; border-radius:10px; font-size:11px; font-weight:600;">おすすめ</span>
+              </div>
+              <div class="radio-option-desc">
+                無料枠: 1,000クエリ/月・クレジットカード不要。APIキー1つだけで設定完了。
+              </div>
+            </div>
+          </label>
+          <label class="radio-option">
+            <input type="radio" name="search-provider" value="google" />
             <div>
               <div class="radio-option-label">Google Custom Search API</div>
               <div class="radio-option-desc">
-                無料枠: 100クエリ/日。Google公式のAPIで安定性が高い。<br>
-                Programmable Search Engineの設定が別途必要。
+                無料枠: 100クエリ/日。Programmable Search Engineの設定が別途必要。
               </div>
             </div>
           </label>
@@ -269,15 +253,35 @@
             <div>
               <div class="radio-option-label">SerpAPI</div>
               <div class="radio-option-desc">
-                無料枠: 100クエリ/月。セットアップが簡単（エンジンID不要）。
+                無料枠: 100クエリ/月。
               </div>
             </div>
           </label>
         </div>
       </div>
 
+      <!-- Tavily Search のフィールド -->
+      <div id="brave-search-fields">
+        <div class="form-group">
+          <label for="brave-api-key">
+            Tavily APIキー
+          </label>
+          <input
+            type="password"
+            id="brave-api-key"
+            placeholder="tvly-..."
+            autocomplete="off"
+          />
+          <p class="field-help">
+            取得方法:
+            <a href="https://app.tavily.com/" target="_blank">Tavily</a>
+            → アカウント作成（無料・クレカ不要）→ APIキーをコピー
+          </p>
+        </div>
+      </div>
+
       <!-- Google Custom Search のフィールド -->
-      <div id="google-search-fields">
+      <div id="google-search-fields" style="display:none">
         <div class="form-group">
           <label for="search-api-key">
             Google Custom Search APIキー
@@ -323,6 +327,33 @@
             でAPIキーを確認してください。
           </p>
         </div>
+      </div>
+    </div>
+
+    <!-- ── YouTube Data API ───────────────────────────────────── -->
+    <div class="card">
+      <h2 class="card-title">🎬 YouTube Data API <span style="font-size:12px; font-weight:400; color: var(--color-text-sub);">（任意）</span></h2>
+      <p class="card-desc">
+        YouTube解説動画を検索するためのAPIキーです。<br>
+        未設定の場合はYouTube動画の検索がスキップされますが、Web記事検索は正常に動作します。
+      </p>
+
+      <div class="form-group">
+        <label for="youtube-api-key">
+          YouTube Data API v3 キー
+          <span class="label-note">（未設定でも動作します）</span>
+        </label>
+        <input
+          type="password"
+          id="youtube-api-key"
+          placeholder="AIzaSy..."
+          autocomplete="off"
+        />
+        <p class="field-help">
+          取得方法:
+          <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>
+          → APIとサービス → 認証情報 → APIキーを作成 → YouTube Data API v3 を有効化
+        </p>
       </div>
     </div>
 

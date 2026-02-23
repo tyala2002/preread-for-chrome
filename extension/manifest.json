@@ -60,7 +60,8 @@
     "https://www.amazon.com/*",
     "https://notebooklm.google.com/*",
     "https://www.googleapis.com/*",
-    "https://serpapi.com/*"
+    "https://serpapi.com/*",
+    "https://api.tavily.com/*"
   ],
 
   "options_ui": {

@@ -14,10 +14,12 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const el = {
   youtubeApiKey:      document.getElementById('youtube-api-key'),
+  braveApiKey:        document.getElementById('brave-api-key'),
   searchApiKey:       document.getElementById('search-api-key'),
   searchEngineId:     document.getElementById('search-engine-id'),
   serpapiKey:         document.getElementById('serpapi-key'),
   searchProviderRadios: document.querySelectorAll('input[name="search-provider"]'),
+  braveSearchFields:  document.getElementById('brave-search-fields'),
   googleSearchFields: document.getElementById('google-search-fields'),
   serpapiFields:      document.getElementById('serpapi-fields'),
   btnSave:            document.getElementById('btn-save'),
@@ -38,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadSettings() {
   const settings = await chrome.storage.sync.get([
     'youtubeApiKey',
+    'braveApiKey',
     'searchApiKey',
     'searchEngineId',
     'serpapiKey',
@@ -46,12 +49,13 @@ async function loadSettings() {
 
   // 各フィールドに設定値をセット
   el.youtubeApiKey.value  = settings.youtubeApiKey  || '';
+  el.braveApiKey.value    = settings.braveApiKey    || '';
   el.searchApiKey.value   = settings.searchApiKey   || '';
   el.searchEngineId.value = settings.searchEngineId || '';
   el.serpapiKey.value     = settings.serpapiKey     || '';
 
-  // 検索プロバイダの選択状態を復元
-  const provider = settings.searchProvider || 'google';
+  // 検索プロバイダの選択状態を復元（デフォルトはbrave）
+  const provider = settings.searchProvider || 'brave';
   el.searchProviderRadios.forEach(radio => {
     radio.checked = radio.value === provider;
   });
@@ -81,16 +85,12 @@ function bindEvents() {
 
 /**
  * 選択された検索プロバイダに応じてフォームフィールドを切り替える
- * @param {'google'|'serpapi'} provider
+ * @param {'brave'|'google'|'serpapi'} provider
  */
 function updateProviderFields(provider) {
-  if (provider === 'serpapi') {
-    el.googleSearchFields.style.display = 'none';
-    el.serpapiFields.style.display = 'block';
-  } else {
-    el.googleSearchFields.style.display = 'block';
-    el.serpapiFields.style.display = 'none';
-  }
+  el.braveSearchFields.style.display  = provider === 'brave'   ? 'block' : 'none';
+  el.googleSearchFields.style.display = provider === 'google'  ? 'block' : 'none';
+  el.serpapiFields.style.display      = provider === 'serpapi' ? 'block' : 'none';
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -105,14 +105,10 @@ async function saveSettings() {
   const selectedProvider = [...el.searchProviderRadios]
     .find(r => r.checked)?.value || 'google';
 
-  // searchApiKey はプロバイダに応じてどちらかのキーを使う
-  const searchApiKey = selectedProvider === 'serpapi'
-    ? el.serpapiKey.value.trim()
-    : el.searchApiKey.value.trim();
-
   const settings = {
     youtubeApiKey:  el.youtubeApiKey.value.trim(),
-    searchApiKey,
+    braveApiKey:    el.braveApiKey.value.trim(),
+    searchApiKey:   el.searchApiKey.value.trim(),
     searchEngineId: el.searchEngineId.value.trim(),
     serpapiKey:     el.serpapiKey.value.trim(),
     searchProvider: selectedProvider,
@@ -128,6 +124,7 @@ async function saveSettings() {
     console.log('[Preread] 設定を保存しました:', {
       ...settings,
       youtubeApiKey: settings.youtubeApiKey ? '***設定済み***' : '（未設定）',
+      braveApiKey:   settings.braveApiKey   ? '***設定済み***' : '（未設定）',
       searchApiKey:  settings.searchApiKey  ? '***設定済み***' : '（未設定）',
       serpapiKey:    settings.serpapiKey    ? '***設定済み***' : '（未設定）',
     });

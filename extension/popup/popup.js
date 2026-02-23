@@ -40,6 +40,7 @@ const el = {
   listVideos: document.getElementById('list-videos'),
 
   // アクションボタン
+  actionButtonsContainer: document.getElementById('action-buttons-container'),
   btnCopyUrls: document.getElementById('btn-copy-urls'),
   btnAddToNotebooklm: document.getElementById('btn-add-to-notebooklm'),
 
@@ -192,7 +193,7 @@ function enterEditMode() {
   el.bookTitleInput.value = currentTitle;
   el.bookTitleDisplay.classList.add('hidden');
   el.bookTitleInput.classList.remove('hidden');
-  el.btnEditTitle.textContent = '✔️';
+  el.btnEditTitle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check"><path d="M20 6 9 17l-5-5"/></svg>';
   el.bookTitleInput.focus();
 }
 
@@ -204,7 +205,7 @@ function confirmEditTitle() {
   const newTitle = el.bookTitleInput.value.trim();
   el.bookTitleInput.classList.add('hidden');
   el.bookTitleDisplay.classList.remove('hidden');
-  el.btnEditTitle.textContent = '✏️';
+  el.btnEditTitle.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>';
   if (newTitle) setBookTitle(newTitle);
 }
 
@@ -326,7 +327,7 @@ function renderList(listEl, items, type) {
     // ステータスバッジ（追加中・完了・エラー等）
     const statusSpan = document.createElement('span');
     statusSpan.className = 'source-item-status';
-    statusSpan.textContent = item.status;
+    statusSpan.innerHTML = item.status;
 
     li.appendChild(checkbox);
     li.appendChild(info);
@@ -439,6 +440,7 @@ async function onAddToNotebooklm(retryFailed = false) {
   document.getElementById('add-error')?.remove();
   failedUrls = [];
   el.btnAddToNotebooklm.disabled = true;
+  el.actionButtonsContainer.classList.add('hidden'); // ボタン群を隠して進捗のみを見せる
 
   // ── NotebookLMタブの状態を事前確認し、適切なメッセージを即座に表示 ──
   // service_worker からのメッセージを待つと、その頃にはポップアップが
@@ -472,12 +474,14 @@ async function onAddToNotebooklm(retryFailed = false) {
     // service workerからのエラーをチェック（DOM操作失敗など）
     if (response?.error) {
       el.progressArea.classList.add('hidden');
+      el.actionButtonsContainer.classList.remove('hidden');
       showAddError(response.error);
     }
 
   } catch (err) {
     console.error('[Preread] add to notebooklm error:', err);
     el.progressArea.classList.add('hidden');
+    el.actionButtonsContainer.classList.remove('hidden');
     showAddError(err.message);
   } finally {
     el.btnAddToNotebooklm.disabled = false;
@@ -498,7 +502,9 @@ chrome.runtime.onMessage.addListener((message) => {
     showProgress(current, total);
 
     // 各アイテムのステータスを更新
-    updateItemStatus(url, success ? '✅' : '❌');
+    const iconSuccess = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>';
+    const iconError = '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-error)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x-circle"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/></svg>';
+    updateItemStatus(url, success ? iconSuccess : iconError);
 
     if (!success) {
       failedUrls.push(url);
@@ -541,7 +547,14 @@ function onAllDone(successCount, errors) {
   if (errors.length > 0) {
     renderErrorList(errors);
     el.errorArea.classList.remove('hidden');
+    el.actionButtonsContainer.classList.remove('hidden');
   }
+
+  // 自動的に最下部までスクロールして完了領域を見せる
+  setTimeout(() => {
+    const area = document.getElementById('notebook-link-area');
+    (area || document.body).scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, 150);
 }
 
 /**
@@ -562,16 +575,16 @@ function renderErrorList(urls) {
  * @param {string} url
  * @param {string} statusText
  */
-function updateItemStatus(url, statusText) {
+function updateItemStatus(url, statusHtml) {
   const allItems = [...articleResults, ...videoResults];
   const item = allItems.find(i => i.url === url);
   if (item) {
-    item.status = statusText;
+    item.status = statusHtml;
     // DOM上のステータスも更新
     const li = document.querySelector(`.source-item[data-url="${CSS.escape(url)}"]`);
     if (li) {
       const statusSpan = li.querySelector('.source-item-status');
-      if (statusSpan) statusSpan.textContent = statusText;
+      if (statusSpan) statusSpan.innerHTML = statusHtml;
     }
   }
 }
@@ -662,6 +675,11 @@ function showNotebookLink(url) {
   if (area && link) {
     link.href = url;
     area.classList.remove('hidden');
+
+    // 最下部までスクロール
+    setTimeout(() => {
+      area.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }, 150);
   }
 }
 
@@ -745,8 +763,9 @@ async function fetchBookTitle(tabId) {
  * APIキーが設定されているかを確認し、未設定の場合は警告を表示する
  */
 async function checkApiKeys() {
-  const keys = await chrome.storage.sync.get(['youtubeApiKey', 'searchApiKey']);
-  if (!keys.youtubeApiKey && !keys.searchApiKey) {
+  const keys = await chrome.storage.sync.get(['youtubeApiKey', 'searchApiKey', 'braveApiKey']);
+  const hasWebKey = keys.braveApiKey || keys.searchApiKey;
+  if (!keys.youtubeApiKey && !hasWebKey) {
     el.msgNoApiKey.classList.remove('hidden');
     el.btnSearch.disabled = true;
   } else {
