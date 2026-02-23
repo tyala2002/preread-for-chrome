@@ -639,9 +639,9 @@ function showSearchWarning(errors) {
     color: #5f4c00;
     line-height: 1.5;
   `;
-  div.innerHTML = `⚠️ Web記事の検索でエラーが発生しました:<br>
+  div.innerHTML = `⚠️ 一部の検索でエラーが発生しました:<br>
     <code style="font-size:10px; word-break:break-all;">${errors.join('<br>')}</code><br>
-    設定画面でAPIキーと検索エンジンIDを確認してください。`;
+    APIキーのクォータ上限に達しているか、設定画面でAPIキーを確認してください。`;
 
   // resultsSection の直前に挿入
   el.resultsSection.before(div);
