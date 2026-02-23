@@ -24,6 +24,10 @@
       --bg-success: #f0fdf4;
       --border-success: #bbf7d0;
 
+      --color-error: #dc2626;
+      --bg-error: #fef2f2;
+      --border-error: #fecaca;
+
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-full: 9999px;
@@ -32,7 +36,6 @@
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
     }
 
-    /* ── リセット・ベース ────────────────────────────────────────────── */
     *,
     *::before,
     *::after {
@@ -80,13 +83,54 @@
       margin-top: 4px;
     }
 
+    /* ── タブナビゲーション ──────────────────────────────────────────── */
+    .tab-nav {
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      padding: 0 24px;
+    }
+
+    .tab-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 20px;
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: -1px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+      border-bottom-color: var(--color-primary);
+      font-weight: 600;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
     .container {
-      max-width: 720px;
+      max-width: 680px;
       margin: 0 auto;
       padding: 32px 16px;
     }
 
-    /* セクションカード */
     .card {
       background: var(--bg-surface);
       border: 1px solid var(--color-border);
@@ -109,11 +153,10 @@
     .card-desc {
       font-size: 13px;
       color: var(--text-muted);
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       line-height: 1.6;
     }
 
-    /* フォームフィールド */
     .form-group {
       margin-bottom: 20px;
     }
@@ -130,13 +173,6 @@
       margin-bottom: 8px;
     }
 
-    .label-note {
-      font-weight: 400;
-      color: var(--text-muted);
-      font-size: 13px;
-    }
-
-    input[type="text"],
     input[type="password"] {
       width: 100%;
       padding: 10px 14px;
@@ -171,67 +207,6 @@
       text-decoration: underline;
     }
 
-    /* ラジオグループ（検索プロバイダ選択） */
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .radio-option {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px 16px;
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-sm);
-      cursor: pointer;
-      transition: all 0.15s ease;
-      background: var(--bg-surface);
-    }
-
-    .radio-option:hover {
-      border-color: #cbd5e1;
-      background: var(--bg-surface-hover);
-    }
-
-    .radio-option:has(input:checked) {
-      border-color: var(--color-primary);
-      background: var(--bg-blue-light);
-    }
-
-    .radio-option input[type="radio"] {
-      margin-top: 2px;
-      width: 16px;
-      height: 16px;
-      accent-color: var(--color-primary);
-    }
-
-    .radio-option-label {
-      font-weight: 600;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .badge-primary {
-      padding: 2px 8px;
-      background: var(--color-primary);
-      color: #fff;
-      border-radius: var(--radius-full);
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .radio-option-desc {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
-      line-height: 1.5;
-    }
-
-    /* 最下部のアクションエリア */
     .actions {
       display: flex;
       align-items: center;
@@ -240,7 +215,6 @@
       padding-bottom: 40px;
     }
 
-    /* 保存ボタン */
     .btn-save {
       display: inline-flex;
       align-items: center;
@@ -263,7 +237,6 @@
       transform: translateY(-1px);
     }
 
-    /* 保存完了メッセージ */
     .msg-saved {
       display: none;
       align-items: center;
@@ -283,15 +256,132 @@
     }
 
     @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(4px);
-      }
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
+    /* ── 管理タブ ─────────────────────────────────────────────────── */
+    .history-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .history-count {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .btn-clear-all {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--bg-base);
+      color: var(--color-error);
+      border: 1px solid var(--border-error);
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-clear-all:hover {
+      background: var(--bg-error);
+    }
+
+    .history-empty {
+      text-align: center;
+      padding: 40px 0;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .history-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--bg-base);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      transition: background 0.15s;
+    }
+
+    .history-item:hover {
+      background: var(--bg-surface-hover);
+    }
+
+    .history-item-info {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .history-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .history-item-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .history-item-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .btn-open-notebook {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--color-primary);
+      text-decoration: none;
+      white-space: nowrap;
+      opacity: 0.85;
+      transition: opacity 0.2s;
+    }
+
+    .btn-open-notebook:hover {
+      opacity: 1;
+    }
+
+    .btn-delete-item {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      transition: all 0.2s;
+    }
+
+    .btn-delete-item:hover {
+      color: var(--color-error);
+      background: var(--bg-error);
     }
   </style>
 </head>
@@ -303,178 +393,134 @@
     <div>
       <h1>
         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-settings">
-          <path
-            d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
           <circle cx="12" cy="12" r="3" />
         </svg>
         Preread 設定
       </h1>
-      <p class="subtitle">APIキーとオプションを設定してください</p>
+      <p class="subtitle">APIキーと履歴を管理してください</p>
     </div>
   </div>
 
-  <div class="container">
+  <!-- ── タブナビゲーション ──────────────────────────────────── -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+        <circle cx="12" cy="12" r="3" />
+      </svg>
+      APIキー設定
+    </button>
+    <button class="tab-btn" data-tab="history">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+        <polyline points="10 2 10 10 13 7 16 10 16 2" />
+      </svg>
+      追加済み書籍
+    </button>
+  </nav>
 
-    <!-- ── Web記事検索API ─────────────────────────────────────── -->
-    <div class="card">
-      <h2 class="card-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-search">
-          <circle cx="11" cy="11" r="8" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-        Web記事検索API
-      </h2>
-      <p class="card-desc">
-        要約・レビュー記事を検索するためのAPIを選択してください。<br>
-        <strong>Tavily Search API</strong> が最も簡単に設定できるためおすすめです。
-      </p>
+  <!-- ── APIキー設定タブ ──────────────────────────────────────── -->
+  <div id="tab-settings" class="tab-panel active">
+    <div class="container">
 
-      <!-- 検索プロバイダ選択 -->
-      <div class="form-group">
-        <label>検索プロバイダを選択</label>
-        <div class="radio-group">
-          <label class="radio-option">
-            <input type="radio" name="search-provider" value="brave" checked />
-            <div>
-              <div class="radio-option-label">
-                Tavily Search API
-                <span class="badge-primary">おすすめ</span>
-              </div>
-              <div class="radio-option-desc">
-                無料枠: 1,000クエリ/月・クレジットカード不要。APIキー1つだけで設定完了。
-              </div>
-            </div>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="search-provider" value="google" />
-            <div>
-              <div class="radio-option-label">Google Custom Search API</div>
-              <div class="radio-option-desc">
-                無料枠: 100クエリ/日。Programmable Search Engineの設定が別途必要。
-              </div>
-            </div>
-          </label>
-          <label class="radio-option">
-            <input type="radio" name="search-provider" value="serpapi" />
-            <div>
-              <div class="radio-option-label">SerpAPI</div>
-              <div class="radio-option-desc">
-                無料枠: 100クエリ/月。
-              </div>
-            </div>
-          </label>
-        </div>
-      </div>
+      <!-- Web記事検索API（Tavily） -->
+      <div class="card">
+        <h2 class="card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.3-4.3" />
+          </svg>
+          Web記事検索 APIキー
+        </h2>
+        <p class="card-desc">
+          書籍の要約・レビュー記事を検索するためのAPIキーです。<br>
+          <strong>Tavily Search API</strong> は無料で1,000クエリ/月使えます。クレジットカード不要。
+        </p>
 
-      <!-- Tavily Search のフィールド -->
-      <div id="brave-search-fields">
         <div class="form-group">
-          <label for="brave-api-key">
-            Tavily APIキー
-          </label>
+          <label for="brave-api-key">Tavily APIキー</label>
           <input type="password" id="brave-api-key" placeholder="tvly-..." autocomplete="off" />
           <p class="field-help">
             取得方法:
-            <a href="https://app.tavily.com/" target="_blank">Tavily</a>
-            → アカウント作成（無料・クレカ不要）→ APIキーをコピー
+            <a href="https://app.tavily.com/" target="_blank">app.tavily.com</a>
+            でアカウント作成 → APIキーをコピーして貼り付けてください。
           </p>
         </div>
       </div>
 
-      <!-- Google Custom Search のフィールド -->
-      <div id="google-search-fields" style="display:none">
-        <div class="form-group">
-          <label for="search-api-key">
-            Google Custom Search APIキー
-          </label>
-          <input type="password" id="search-api-key" placeholder="AIzaSy..." autocomplete="off" />
-        </div>
-        <div class="form-group">
-          <label for="search-engine-id">
-            カスタム検索エンジン ID (cx)
-          </label>
-          <input type="text" id="search-engine-id" placeholder="012345678901234567890:abcdefghijk" />
-          <p class="field-help">
-            <a href="https://programmablesearchengine.google.com/" target="_blank">
-              Programmable Search Engine
-            </a> で「ウェブ全体を検索」に設定したエンジンのIDを入力してください。
-          </p>
+      <!-- アクション -->
+      <div class="actions">
+        <button id="btn-save" class="btn-save">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+            <polyline points="17 21 17 13 7 13 7 21" />
+            <polyline points="7 3 7 8 15 8" />
+          </svg>
+          設定を保存
+        </button>
+
+        <div id="msg-saved" class="msg-saved">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          <span>設定を保存しました</span>
         </div>
       </div>
 
-      <!-- SerpAPI のフィールド -->
-      <div id="serpapi-fields" style="display:none">
-        <div class="form-group">
-          <label for="serpapi-key">
-            SerpAPI キー
-          </label>
-          <input type="password" id="serpapi-key" placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" />
-          <p class="field-help">
-            <a href="https://serpapi.com/dashboard" target="_blank">SerpAPI ダッシュボード</a>
-            でAPIキーを確認してください。
-          </p>
-        </div>
-      </div>
     </div>
+  </div>
 
-    <!-- ── YouTube Data API ───────────────────────────────────── -->
-    <div class="card">
-      <h2 class="card-title">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-youtube">
-          <path
-            d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17" />
-          <path d="m10 15 5-3-5-3z" />
-        </svg>
-        YouTube Data API <span class="label-note">（任意）</span>
-      </h2>
-      <p class="card-desc">
-        YouTube解説動画を検索するためのAPIキーです。<br>
-        未設定の場合はYouTube動画の検索がスキップされますが、Web記事検索は正常に動作します。
-      </p>
+  <!-- ── 追加済み書籍タブ ─────────────────────────────────────── -->
+  <div id="tab-history" class="tab-panel">
+    <div class="container">
 
-      <div class="form-group">
-        <label for="youtube-api-key">
-          YouTube Data API v3 キー
-        </label>
-        <input type="password" id="youtube-api-key" placeholder="AIzaSy..." autocomplete="off" />
-        <p class="field-help">
-          取得方法:
-          <a href="https://console.cloud.google.com/" target="_blank">Google Cloud Console</a>
-          → APIとサービス → 認証情報 → APIキーを作成 → YouTube Data API v3 を有効化
+      <div class="card">
+        <h2 class="card-title">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+            <polyline points="10 2 10 10 13 7 16 10 16 2" />
+          </svg>
+          追加済みの書籍
+        </h2>
+        <p class="card-desc">
+          NotebookLMにソースを追加した書籍の履歴です。各ノートブックに直接アクセスできます。
         </p>
+
+        <div class="history-header">
+          <span id="history-count" class="history-count"></span>
+          <button id="btn-clear-all" class="btn-clear-all" style="display:none">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+            すべて削除
+          </button>
+        </div>
+
+        <div id="history-empty" class="history-empty">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"
+            style="margin: 0 auto 12px; display:block; opacity:0.3">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+          </svg>
+          まだ書籍が追加されていません
+        </div>
+
+        <ul id="history-list" class="history-list"></ul>
       </div>
+
     </div>
-
-    <!-- ── アクション ─────────────────────────────────────────── -->
-    <div class="actions">
-      <button id="btn-save" class="btn-save">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-save">
-          <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
-          <polyline points="17 21 17 13 7 13 7 21" />
-          <polyline points="7 3 7 8 15 8" />
-        </svg>
-        設定を保存
-      </button>
-
-      <div id="msg-saved" class="msg-saved">
-        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-          class="lucide lucide-check-circle-2">
-          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-        <span>設定を保存しました</span>
-      </div>
-    </div>
-
   </div>
 
   <script src="options.js"></script>

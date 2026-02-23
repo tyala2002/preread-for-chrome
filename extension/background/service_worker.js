@@ -115,7 +115,7 @@ async function handleSearchSources({ bookTitle }) {
     ]);
 
   const hasWebSearchKey = braveApiKey || searchApiKey;
-  if (!youtubeApiKey && !hasWebSearchKey) {
+  if (!hasWebSearchKey) {
     throw new Error('NO_API_KEY');
   }
 
@@ -123,12 +123,8 @@ async function handleSearchSources({ bookTitle }) {
 
   // Web記事とYouTube動画を並行して検索する
   const [articles, videos] = await Promise.allSettled([
-    hasWebSearchKey
-      ? searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider })
-      : Promise.resolve({ results: [], errors: [] }),
-    youtubeApiKey
-      ? searchYouTubeVideos(bookTitle, youtubeApiKey)
-      : Promise.resolve({ results: [], errors: [] }),
+    searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider }),
+    searchYouTubeVideos(bookTitle, youtubeApiKey || null),
   ]);
 
   const articleData = articles.status === 'fulfilled'
@@ -297,14 +293,177 @@ async function searchWithSerpApi(query, apiKey) {
 }
 
 /**
- * YouTube Data API v3 で動画を検索する
+ * YouTube Data API v3 で動画を検索する（API直接呼び出し）
+ *
+ * @param {string} query
+ * @param {string} apiKey
+ * @returns {Promise<SearchResult[]>}
+ */
+async function searchYouTubeViaApi(query, apiKey) {
+  const params = new URLSearchParams({
+    key: apiKey,
+    part: 'snippet',
+    q: query,
+    type: 'video',
+    maxResults: '5',
+    relevanceLanguage: 'ja',
+    order: 'relevance',
+  });
+
+  const response = await fetch(`${YOUTUBE_API_URL}?${params}`);
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(`YouTube APIエラー: ${response.status} - ${err.error?.message || ''}`);
+  }
+
+  const data = await response.json();
+  return (data.items || []).map(item => ({
+    title: item.snippet.title,
+    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
+    snippet: item.snippet.description,
+    thumbnail: item.snippet.thumbnails?.default?.url,
+  }));
+}
+
+/**
+ * YouTubeの検索結果ページをfetchして動画を取得する（スクレイピングフォールバック）
+ *
+ * @param {string} query
+ * @returns {Promise<SearchResult[]>}
+ */
+async function searchYouTubeViaScraping(query) {
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&hl=ja`;
+  const response = await fetch(url, {
+    credentials: 'omit',
+    headers: {
+      'Accept-Language': 'ja,en;q=0.9',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`YouTubeスクレイピングエラー: ${response.status}`);
+  }
+
+  const html = await response.text();
+  const data = parseYtInitialData(html);
+  if (!data) {
+    throw new Error('ytInitialData のパースに失敗しました');
+  }
+
+  try {
+    const contents = data?.contents
+      ?.twoColumnSearchResultsRenderer
+      ?.primaryContents
+      ?.sectionListRenderer
+      ?.contents;
+
+    if (!Array.isArray(contents)) return [];
+
+    const videos = [];
+    for (const section of contents) {
+      const items = section?.itemSectionRenderer?.contents;
+      if (!Array.isArray(items)) continue;
+
+      for (const item of items) {
+        const vr = item?.videoRenderer;
+        if (!vr?.videoId) continue;
+
+        const title = vr.title?.runs?.[0]?.text;
+        if (!title) continue;
+
+        videos.push({
+          title,
+          url: `https://www.youtube.com/watch?v=${vr.videoId}`,
+          snippet: vr.descriptionSnippet?.runs?.[0]?.text || '',
+          thumbnail: vr.thumbnail?.thumbnails?.[0]?.url,
+        });
+      }
+    }
+    return videos;
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * HTML文字列から ytInitialData の JSON オブジェクトをパースする
+ *
+ * @param {string} html
+ * @returns {object|null}
+ */
+function parseYtInitialData(html) {
+  const marker = 'ytInitialData = ';
+  const idx = html.indexOf(marker);
+  if (idx === -1) return null;
+
+  const startIdx = idx + marker.length;
+  const jsonStr = extractJsonObject(html, startIdx);
+  if (!jsonStr) return null;
+
+  try {
+    return JSON.parse(jsonStr);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * バランスカウント法でJSON オブジェクト文字列を抽出する
+ *
+ * @param {string} str
+ * @param {number} startIdx - '{' の位置
+ * @returns {string|null}
+ */
+function extractJsonObject(str, startIdx) {
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIdx; i < str.length; i++) {
+    const ch = str[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (ch === '\\' && inString) {
+      escaped = true;
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = !inString;
+      continue;
+    }
+
+    if (inString) continue;
+
+    if (ch === '{') {
+      depth++;
+    } else if (ch === '}') {
+      depth--;
+      if (depth === 0) {
+        return str.slice(startIdx, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
+ * YouTube動画を検索する
+ *
+ * APIキーがある場合はYouTube Data API v3を使用し、
+ * ない場合はスクレイピングにフォールバックする。
  *
  * 検索クエリ:
  *   - "{タイトル} 要約"
  *   - "{タイトル} 解説"
  *
  * @param {string} bookTitle
- * @param {string} apiKey
+ * @param {string|null} apiKey
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
 async function searchYouTubeVideos(bookTitle, apiKey) {
@@ -318,30 +477,12 @@ async function searchYouTubeVideos(bookTitle, apiKey) {
 
   for (const query of queries) {
     try {
-      const params = new URLSearchParams({
-        key: apiKey,
-        part: 'snippet',
-        q: query,
-        type: 'video',
-        maxResults: '5',
-        relevanceLanguage: 'ja',
-        order: 'relevance',
-      });
-
-      const response = await fetch(`${YOUTUBE_API_URL}?${params}`);
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({}));
-        throw new Error(`YouTube APIエラー: ${response.status} - ${err.error?.message || ''}`);
+      let results;
+      if (apiKey) {
+        results = await searchYouTubeViaApi(query, apiKey);
+      } else {
+        results = await searchYouTubeViaScraping(query);
       }
-
-      const data = await response.json();
-      const results = (data.items || []).map(item => ({
-        title: item.snippet.title,
-        url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-        snippet: item.snippet.description,
-        thumbnail: item.snippet.thumbnails?.default?.url,
-      }));
-
       allResults.push(...results);
     } catch (err) {
       console.warn(`[Preread SW] YouTube検索エラー (${query}):`, err.message);
@@ -465,10 +606,11 @@ async function handleAddToNotebookLM({ urls, title }, sender) {
     forwardStatusToPopup('ソースを一括追加中...');
     await pureApiAddSources(notebookId, urls, auth);
 
-    // 全て成功としてポップアップに進捗を送信
-    urls.forEach((url, i) => {
-      forwardProgressToPopup({ current: i + 1, total: urls.length, url, success: true });
-    });
+    // 全て成功としてポップアップに進捗を送信（60ms 間隔でバーが段階的に埋まるようにする）
+    for (let i = 0; i < urls.length; i++) {
+      await new Promise(r => setTimeout(r, 60));
+      forwardProgressToPopup({ current: i + 1, total: urls.length, url: urls[i], success: true });
+    }
 
     // 完了時のリンクURLをポップアップに送る
     const notebookUrl = `${NOTEBOOKLM_URL}notebook/${notebookId}`;

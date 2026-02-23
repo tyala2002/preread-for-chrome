@@ -58,6 +58,10 @@ const el = {
 
   // ヘッダー設定リンク
   btnOpenOptions: document.getElementById('btn-open-options'),
+
+  // 追加済み書籍リスト
+  recentBooksSection: document.getElementById('recent-books-section'),
+  recentBooksList: document.getElementById('recent-books-list'),
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -71,6 +75,9 @@ let videoResults = [];
 
 /** タイトル編集モード中かどうか */
 let isEditingTitle = false;
+
+/** 現在のAmazon商品のASIN */
+let currentAsin = null;
 
 /** 失敗したURLのリスト（再試行用） */
 let failedUrls = [];
@@ -98,6 +105,7 @@ async function init() {
       el.msgNotAmazon.classList.remove('hidden');
       el.bookTitleDisplay.textContent = '—';
       el.btnSearch.disabled = true;
+      await renderRecentBooks();
       return;
     }
 
@@ -112,6 +120,12 @@ async function init() {
 
     // APIキーの設定確認
     await checkApiKeys();
+
+    // ASIN抽出
+    currentAsin = extractAsin(tab.url);
+
+    // 追加済み書籍リストを表示
+    await renderRecentBooks();
 
   } catch (err) {
     console.error('[Preread] init error:', err);
@@ -385,6 +399,72 @@ function getSelectedUrls() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// 追加済み書籍リスト
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * URLからAmazon ASINを抽出する
+ * @param {string} url
+ * @returns {string|null}
+ */
+function extractAsin(url) {
+  if (!url) return null;
+  const match = url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})(?:\/|$|\?)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * 書籍とノートブックの対応を保存する（最大20件、同一ASINは上書き）
+ * @param {string} asin
+ * @param {string} bookTitle
+ * @param {string} notebookUrl
+ */
+async function saveBookNotebook(asin, bookTitle, notebookUrl) {
+  if (!asin || !notebookUrl) return;
+  const { bookNotebookHistory = [] } = await chrome.storage.local.get('bookNotebookHistory');
+  const filtered = bookNotebookHistory.filter(h => h.asin !== asin);
+  filtered.unshift({ asin, bookTitle, notebookUrl, timestamp: Date.now() });
+  await chrome.storage.local.set({ bookNotebookHistory: filtered.slice(0, 20) });
+}
+
+/**
+ * 追加済み書籍リストを読み込んでレンダリングする
+ */
+async function renderRecentBooks() {
+  const { bookNotebookHistory = [] } = await chrome.storage.local.get('bookNotebookHistory');
+
+  if (bookNotebookHistory.length === 0) {
+    el.recentBooksSection.classList.add('hidden');
+    return;
+  }
+
+  el.recentBooksSection.classList.remove('hidden');
+  el.recentBooksList.innerHTML = '';
+
+  const openIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`;
+
+  bookNotebookHistory.forEach(entry => {
+    const li = document.createElement('li');
+    li.className = 'recent-book-item';
+
+    const title = document.createElement('span');
+    title.className = 'recent-book-title';
+    title.textContent = entry.bookTitle || '（タイトルなし）';
+    title.title = entry.bookTitle || '';
+
+    const link = document.createElement('a');
+    link.className = 'btn-open-notebook';
+    link.href = entry.notebookUrl;
+    link.target = '_blank';
+    link.innerHTML = `${openIcon} 開く`;
+
+    li.appendChild(title);
+    li.appendChild(link);
+    el.recentBooksList.appendChild(li);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // クリップボードコピー
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -467,7 +547,7 @@ async function onAddToNotebooklm(retryFailed = false) {
       type: 'ADD_TO_NOTEBOOKLM',
       payload: {
         urls,
-        title: el.bookTitleDisplay.textContent
+        title: el.bookTitleDisplay.textContent,
       },
     });
 
@@ -518,9 +598,9 @@ chrome.runtime.onMessage.addListener((message) => {
 
   if (message.type === 'STATUS_UPDATE') {
     const { message: msg } = message.payload;
-    // エラーメッセージ（⚠️ で始まる）は progress テキストに直接表示
     if (msg) {
       el.progressArea.classList.remove('hidden');
+      el.progressBarFill.classList.add('indeterminate');
       el.progressText.textContent = msg;
     }
   }
@@ -528,6 +608,14 @@ chrome.runtime.onMessage.addListener((message) => {
   if (message.type === 'NOTEBOOK_READY') {
     const { notebookUrl } = message.payload;
     showNotebookLink(notebookUrl);
+
+    // 書籍 × ノートブックの対応を保存してリストを更新
+    if (currentAsin && notebookUrl) {
+      const bookTitle = el.bookTitleDisplay.textContent.trim();
+      saveBookNotebook(currentAsin, bookTitle, notebookUrl).then(() => {
+        renderRecentBooks();
+      });
+    }
   }
 });
 
@@ -653,12 +741,12 @@ function showSearchWarning(errors) {
  */
 function showStatusMessage(msg) {
   el.progressArea.classList.remove('hidden');
-  el.progressBarFill.style.width = '0%';
+  el.progressBarFill.classList.add('indeterminate');
   el.progressText.textContent = msg;
 }
 
 function hideStatusMessage() {
-  // 進捗バーがまだ待機メッセージ（%表示でない）のままなら非表示に戻す
+  el.progressBarFill.classList.remove('indeterminate');
   if (el.progressText.textContent.includes('自動作成中')) {
     el.progressArea.classList.add('hidden');
   }
@@ -701,6 +789,7 @@ function hideLoading() {
  */
 function showProgress(current, total) {
   el.progressArea.classList.remove('hidden');
+  el.progressBarFill.classList.remove('indeterminate');
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
   el.progressBarFill.style.width = `${pct}%`;
   el.progressText.textContent = `${current} / ${total} 件追加中...`;
@@ -763,9 +852,8 @@ async function fetchBookTitle(tabId) {
  * APIキーが設定されているかを確認し、未設定の場合は警告を表示する
  */
 async function checkApiKeys() {
-  const keys = await chrome.storage.sync.get(['youtubeApiKey', 'searchApiKey', 'braveApiKey']);
-  const hasWebKey = keys.braveApiKey || keys.searchApiKey;
-  if (!keys.youtubeApiKey && !hasWebKey) {
+  const { braveApiKey } = await chrome.storage.sync.get('braveApiKey');
+  if (!braveApiKey) {
     el.msgNoApiKey.classList.remove('hidden');
     el.btnSearch.disabled = true;
   } else {

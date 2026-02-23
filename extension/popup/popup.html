@@ -78,6 +78,22 @@
   </div>
 
   <!-- ═══════════════════════════════════════════════════════════
+       追加済み書籍リスト
+  ═══════════════════════════════════════════════════════════ -->
+  <section id="recent-books-section" class="recent-books-section hidden">
+    <h3 class="recent-books-heading">
+      <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        class="lucide lucide-book-marked">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+        <polyline points="10 2 10 10 13 7 16 10 16 2" />
+      </svg>
+      追加済みの書籍
+    </h3>
+    <ul id="recent-books-list" class="recent-books-list"></ul>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════════════════
        ローディングスピナー
   ═══════════════════════════════════════════════════════════ -->
   <div id="loading" class="loading hidden">
@@ -97,7 +113,7 @@
         <path d="M12 9v4" />
         <path d="M12 17h.01" />
       </svg>
-      APIキーが設定されていません。
+      Web記事検索のAPIキーが設定されていません。YouTubeはAPIキー不要で動作します。
     </p>
     <button id="btn-go-options" class="btn-secondary">設定画面を開く</button>
   </div>
