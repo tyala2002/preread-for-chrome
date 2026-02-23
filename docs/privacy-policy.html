@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>プライバシーポリシー — Preread</title>
+  <style>
+    :root {
+      --color-primary: #2563eb;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --bg-base: #f8fafc;
+      --bg-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --radius-md: 10px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+                   -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-main);
+      background: var(--bg-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: var(--color-primary);
+      color: #fff;
+      padding: 32px 24px;
+    }
+
+    header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 14px;
+      opacity: 0.85;
+    }
+
+    main {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    section {
+      background: var(--bg-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 28px 32px;
+      margin-bottom: 24px;
+    }
+
+    h2 {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    p { margin-bottom: 12px; }
+    p:last-child { margin-bottom: 0; }
+
+    ul, ol {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+
+    li { margin-bottom: 6px; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+      margin-top: 12px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 10px 14px;
+      border: 1px solid var(--color-border);
+    }
+
+    th {
+      background: var(--bg-base);
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td code {
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+      font-size: 13px;
+      background: var(--bg-base);
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--color-border);
+    }
+
+    a { color: var(--color-primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .highlight {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      padding: 14px 18px;
+      font-size: 14px;
+      color: #1e40af;
+      margin-bottom: 16px;
+    }
+
+    .updated {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 6px;
+    }
+
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>プライバシーポリシー — Preread</h1>
+  <p class="updated">最終更新日：2026年2月23日</p>
+</header>
+
+<main>
+
+  <!-- 概要 -->
+  <section>
+    <h2>📋 概要</h2>
+    <div class="highlight">
+      Preread は、ユーザーの個人情報を収集・保存・販売しません。
+      外部に送信するデータは「書籍タイトル」のみです。
+    </div>
+    <p>
+      Preread（以下「本拡張機能」）は、Amazonの書籍ページに関連する
+      要約・レビュー記事とYouTube動画を自動で収集し、
+      NotebookLM（Google LLC）のソースとして追加するChrome拡張機能です。
+    </p>
+    <p>
+      本ポリシーは、本拡張機能がどのようにデータを取り扱うかを説明します。
+    </p>
+  </section>
+
+  <!-- 収集・送信するデータ -->
+  <section>
+    <h2>📤 外部サービスへ送信するデータ</h2>
+    <p>
+      本拡張機能は、ユーザーが操作を実行したときのみ、
+      以下のデータを各サービスへ送信します。
+      送信先は各サービスのサーバーのみであり、開発者のサーバーには送信しません。
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>送信先</th>
+          <th>送信されるデータ</th>
+          <th>タイミング</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tavily Search API</td>
+          <td>書籍タイトル（検索クエリ）</td>
+          <td>「ソースを検索」ボタンを押したとき</td>
+        </tr>
+        <tr>
+          <td>YouTube（youtube.com）</td>
+          <td>書籍タイトル（検索クエリ）</td>
+          <td>「ソースを検索」ボタンを押したとき</td>
+        </tr>
+        <tr>
+          <td>NotebookLM（notebooklm.google.com）</td>
+          <td>選択したURL一覧・書籍タイトル・一時的な認証トークン</td>
+          <td>「NotebookLMに追加」ボタンを押したとき</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 14px; font-size: 13px; color: var(--text-muted);">
+      ※ NotebookLMへの認証トークンは、同サービスのページから一時的に取得し、
+      その操作のみに使用します。トークンは保存・外部送信しません。
+    </p>
+  </section>
+
+  <!-- ローカル保存データ -->
+  <section>
+    <h2>💾 デバイス内に保存されるデータ</h2>
+    <p>
+      以下のデータはユーザーのブラウザ内にのみ保存されます。
+      開発者サーバーへの送信は行いません。
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>データ</th>
+          <th>保存場所</th>
+          <th>用途</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tavily APIキー</td>
+          <td><code>chrome.storage.sync</code></td>
+          <td>Web記事検索に使用</td>
+        </tr>
+        <tr>
+          <td>追加済み書籍の履歴<br>（書籍タイトル・ASINコード・NotebookLM URL・日時）</td>
+          <td><code>chrome.storage.local</code></td>
+          <td>ポップアップと設定画面での履歴表示に使用</td>
+        </tr>
+      </tbody>
+    </table>
+    <p style="margin-top: 14px; font-size: 13px; color: var(--text-muted);">
+      ※ <code>chrome.storage.sync</code> に保存されたデータは、
+      Googleアカウントでログイン中の場合、Chromeの同期機能によって
+      ユーザー自身の他のデバイスと同期される場合があります。
+    </p>
+  </section>
+
+  <!-- 収集しないデータ -->
+  <section>
+    <h2>🚫 収集しないデータ</h2>
+    <ul>
+      <li>氏名・メールアドレスなどの個人識別情報</li>
+      <li>閲覧履歴・検索履歴</li>
+      <li>位置情報</li>
+      <li>決済・金融情報</li>
+      <li>ユーザーの行動ログや分析データ</li>
+    </ul>
+    <p>
+      本拡張機能は広告ネットワーク、アナリティクスツール、
+      その他のトラッキングサービスを一切使用しません。
+      収集したデータを第三者に販売・共有することもありません。
+    </p>
+  </section>
+
+  <!-- 権限の説明 -->
+  <section>
+    <h2>🔑 Chrome 権限の使用理由</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>権限</th>
+          <th>使用理由</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>activeTab</code></td>
+          <td>現在開いているAmazonページのURLを取得し、書籍ページかどうかを判定するため</td>
+        </tr>
+        <tr>
+          <td><code>scripting</code></td>
+          <td>AmazonページのDOMから書籍タイトルを取得するため</td>
+        </tr>
+        <tr>
+          <td><code>storage</code></td>
+          <td>APIキーと書籍履歴をブラウザ内に保存するため</td>
+        </tr>
+        <tr>
+          <td><code>tabs</code></td>
+          <td>NotebookLMのタブが既に開いているか確認するため</td>
+        </tr>
+        <tr>
+          <td><code>clipboardWrite</code></td>
+          <td>選択したURLをクリップボードにコピーするため</td>
+        </tr>
+        <tr>
+          <td><code>notifications</code></td>
+          <td>NotebookLMへの追加完了をシステム通知でお知らせするため</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 第三者サービス -->
+  <section>
+    <h2>🌐 利用する第三者サービス</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>サービス</th>
+          <th>運営者</th>
+          <th>プライバシーポリシー</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Tavily Search API</td>
+          <td>Tavily</td>
+          <td><a href="https://tavily.com/privacy" target="_blank">tavily.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td>YouTube</td>
+          <td>Google LLC</td>
+          <td><a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td>NotebookLM</td>
+          <td>Google LLC</td>
+          <td><a href="https://policies.google.com/privacy" target="_blank">policies.google.com/privacy</a></td>
+        </tr>
+        <tr>
+          <td>Amazon</td>
+          <td>Amazon.com, Inc.</td>
+          <td><a href="https://www.amazon.co.jp/gp/help/customer/display.html?nodeId=643000" target="_blank">Amazon プライバシー規約</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ポリシーの変更 -->
+  <section>
+    <h2>📝 ポリシーの変更</h2>
+    <p>
+      本ポリシーの内容を変更する場合は、このページの「最終更新日」を更新します。
+      重要な変更が生じた場合は、拡張機能の更新履歴（Chrome ウェブストア）にも記載します。
+    </p>
+    <p>
+      変更後も本拡張機能を引き続きご利用いただいた場合、
+      変更後のポリシーに同意したものとみなします。
+    </p>
+  </section>
+
+  <!-- お問い合わせ -->
+  <section>
+    <h2>📬 お問い合わせ</h2>
+    <p>
+      本プライバシーポリシーに関するご質問・ご意見は、
+      GitHubリポジトリの Issue よりお送りください。
+    </p>
+  </section>
+
+</main>
+
+<footer>
+  &copy; 2026 Preread. このページは GitHub Pages で公開されています。
+</footer>
+
+</body>
+</html>

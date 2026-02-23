@@ -4,75 +4,87 @@ _Last updated: 2026-02-23_
 
 ## Overview
 
-Preread ("the Extension") is a Chrome extension that helps users research books by finding related articles and YouTube videos, and adding them to NotebookLM.
+Preread ("the Extension") is a Chrome extension that helps users research books by finding
+related articles and YouTube videos, and adding them as sources to NotebookLM.
+
+**The Extension does not collect, store, or transmit any personal information to the developer's servers.**
+The only data sent to external services is the book title (as a search query).
 
 ---
 
-## Data We Collect
+## Data Transmitted to External Services
 
-The Extension does **not** collect, store, or transmit any personal information to our servers.
+The Extension sends data to the following services only when the user explicitly triggers an action.
 
-### Data stored locally on your device
+| Destination | Data sent | When |
+|---|---|---|
+| Tavily Search API | Book title (search query) | On "Search sources" button press |
+| YouTube (youtube.com) | Book title (search query) | On "Search sources" button press |
+| NotebookLM (notebooklm.google.com) | Selected URLs, book title, temporary auth token | On "Add to NotebookLM" button press |
 
-The following data is stored in `chrome.storage.sync` (synced across your Chrome devices via your Google account):
-
-| Data | Purpose |
-|------|---------|
-| Tavily API key | Web article search |
-| YouTube Data API key | YouTube video search |
-| Google Custom Search API key / Engine ID | Alternative web search (optional) |
-| SerpAPI key | Alternative web search (optional) |
-| Selected search provider | User preference |
-
-**These keys are stored only in your browser and are never sent to our servers.**
+> The NotebookLM auth token is read ephemerally from the notebooklm.google.com page,
+> used only for that single operation, and never stored or forwarded elsewhere.
 
 ---
 
-## Data We Do Not Collect
+## Data Stored Locally
 
-- We do not collect your name, email address, or any personally identifiable information.
-- We do not track your browsing history.
-- We do not use analytics or third-party tracking.
-- We do not sell data to any third parties.
+The following data is stored only in the user's browser and is never sent to the developer's servers.
+
+| Data | Storage | Purpose |
+|---|---|---|
+| Tavily API key | `chrome.storage.sync` | Web article search |
+| Book + NotebookLM URL history | `chrome.storage.local` | History display in popup and options page |
+
+> Data in `chrome.storage.sync` may be synced across the user's own Chrome devices via their Google account.
+
+---
+
+## Data We Do NOT Collect
+
+- Personal identifiable information (name, email, etc.)
+- Browsing or search history
+- Location data
+- Payment or financial information
+- Analytics or behavioral tracking data
+
+The Extension uses no advertising networks, analytics tools, or third-party trackers.
+No data is sold or shared with any third party.
+
+---
+
+## Chrome Permissions
+
+| Permission | Reason |
+|---|---|
+| `activeTab` | Determine if the current tab is an Amazon book page |
+| `scripting` | Extract the book title from the Amazon page DOM |
+| `storage` | Save API key and book history in the browser |
+| `tabs` | Check if a NotebookLM tab is already open |
+| `clipboardWrite` | Copy selected URLs to clipboard |
+| `notifications` | Notify the user when sources are successfully added |
 
 ---
 
 ## Third-Party Services
 
-The Extension communicates with the following external services on your behalf:
-
-| Service | Purpose | Privacy Policy |
-|---------|---------|----------------|
-| Amazon (amazon.co.jp / amazon.com) | Read book title from the current page | [Amazon Privacy](https://www.amazon.com/gp/help/customer/display.html?nodeId=468496) |
-| Tavily API | Search for related articles | [Tavily Privacy](https://tavily.com/privacy) |
-| YouTube Data API v3 | Search for related videos | [Google Privacy](https://policies.google.com/privacy) |
-| NotebookLM (notebooklm.google.com) | Add sources to your notebook | [Google Privacy](https://policies.google.com/privacy) |
-
-API requests to these services include only the book title as a search query. Your API keys are sent directly from your browser to each respective service and are not routed through our servers.
-
----
-
-## Permissions
-
-The Extension requests the following Chrome permissions:
-
-| Permission | Reason |
-|-----------|--------|
-| `activeTab` | Read the book title from the current Amazon page |
-| `scripting` | Inject scripts to interact with Amazon and NotebookLM pages |
-| `storage` | Save your API key settings locally |
-| `tabs` | Open and manage the NotebookLM tab |
-| `clipboardWrite` | Copy URLs to your clipboard |
-| `notifications` | Show a notification when sources are added |
+| Service | Provider | Privacy Policy |
+|---|---|---|
+| Tavily Search API | Tavily | https://tavily.com/privacy |
+| YouTube | Google LLC | https://policies.google.com/privacy |
+| NotebookLM | Google LLC | https://policies.google.com/privacy |
+| Amazon | Amazon.com, Inc. | https://www.amazon.com/gp/help/customer/display.html?nodeId=468496 |
 
 ---
 
 ## Changes to This Policy
 
-If this policy is updated, the "Last updated" date at the top of this page will be revised. Continued use of the Extension after changes constitutes acceptance of the updated policy.
+If this policy is updated, the "Last updated" date at the top of this page will be revised.
+Material changes will also be noted in the Chrome Web Store update history.
+Continued use of the Extension after changes constitutes acceptance of the updated policy.
 
 ---
 
 ## Contact
 
-If you have any questions about this privacy policy, please open an issue on the GitHub repository.
+If you have questions about this privacy policy, please open an issue on the GitHub repository.
