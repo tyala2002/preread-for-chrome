@@ -1,23 +1,16 @@
-<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="primary-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#4facfe" />
-      <stop offset="100%" stop-color="#00f2fe" />
-    </linearGradient>
-    <linearGradient id="book-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#2563eb" />
-      <stop offset="100%" stop-color="#1e3a8a" />
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="36" fill="#5C4532" />
+
+  <!-- Left Page (Paper / Amazon) -->
+  <path d="M 22 36 Q 41 24 60 40 L 60 96 Q 41 80 22 92 Z" fill="#F4EFE6" />
   
-  <!-- 背景角丸 -->
-  <rect width="128" height="128" rx="28" fill="url(#book-grad)" />
-  
-  <!-- 本のシンボル -->
-  <path d="M 32 40 h 16 a 12 12 0 0 1 12 12 v 44 a 10 10 0 0 0 -10 -10 H 32 z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M 96 40 H 80 a 12 12 0 0 0 -12 12 v 44 a 10 10 0 0 1 10 -10 h 18 z" fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-  
-  <!-- AIスパークル (ひらめき・星) -->
-  <path d="M 64 16 L 68 32 L 84 36 L 68 40 L 64 56 L 60 40 L 44 36 L 60 32 Z" fill="#93c5fd" />
-  <circle cx="86" cy="20" r="4" fill="#93c5fd" />
+  <!-- Right Page (Digital / NotebookLM) -->
+  <path d="M 68 40 Q 87 24 106 36 L 106 92 Q 87 80 68 96 Z" fill="#67D4D4" />
+
+  <!-- Abstract text lines on left page -->
+  <rect x="32" y="50" width="22" height="10" rx="5" fill="#5C4532" />
+  <rect x="32" y="68" width="14" height="10" rx="5" fill="#5C4532" />
+
+  <!-- Play button / Data forward symbol on right page -->
+  <polygon points="78,50 78,82 101,66" fill="#5C4532" />
 </svg>

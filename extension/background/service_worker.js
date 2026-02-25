@@ -54,10 +54,10 @@ const BLOCKED_DOMAINS = [
 ];
 
 /** 検索するWeb記事の最大件数 */
-const MAX_ARTICLE_RESULTS = 8;
+const MAX_ARTICLE_RESULTS = 5;
 
 /** 検索するYouTube動画の最大件数 */
-const MAX_VIDEO_RESULTS = 5;
+const MAX_VIDEO_RESULTS = 3;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // メッセージリスナー（メインルーター）
@@ -150,9 +150,7 @@ async function handleSearchSources({ bookTitle }) {
  * 優先順位: Tavily → Google Custom Search → SerpAPI
  *
  * 検索クエリ:
- *   - "{タイトル} 要約"
- *   - "{タイトル} レビュー"
- *   - "{タイトル} まとめ"
+ *   - "{タイトル} 要約 レビュー まとめ"（1回の呼び出しで複合検索）
  *
  * @param {string} bookTitle
  * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string }} keys
@@ -160,9 +158,7 @@ async function handleSearchSources({ bookTitle }) {
  */
 async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google' }) {
   const queries = [
-    `${bookTitle} 要約`,
-    `${bookTitle} レビュー`,
-    `${bookTitle} まとめ`,
+    `${bookTitle} 要約 レビュー まとめ`,
   ];
 
   const allResults = [];
@@ -212,7 +208,7 @@ async function searchWithTavily(query, apiKey) {
       api_key: apiKey,
       query,
       search_depth: 'basic',
-      max_results: 5,
+      max_results: 10,
       include_answer: false,
     }),
   });
