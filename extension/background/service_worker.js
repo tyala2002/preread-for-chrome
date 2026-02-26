@@ -51,6 +51,8 @@ const BLOCKED_DOMAINS = [
   'tiktok.com',
   'amazon.co.jp',  // Amazonは自分自身を検索結果に含めない
   'amazon.com',
+  'youtube.com',   // YouTube動画は別セクションで取得するため記事から除外
+  'youtu.be',
 ];
 
 /** 検索するWeb記事の最大件数 */
