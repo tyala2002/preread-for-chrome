@@ -12,6 +12,13 @@ dist
 dist-ssr
 *.local
 
+# Private docs (drafts, launch plans)
+docs/note/
+docs/x/
+docs/MONETIZATION_ROADMAP.md
+CLAUDE.md
+extension/SS/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
