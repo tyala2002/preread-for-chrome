@@ -8,13 +8,16 @@
 
 'use strict';
 
+import { initI18n, t } from '../i18n.js';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // DOM要素の取得
 // ═══════════════════════════════════════════════════════════════════════════
 const el = {
-  braveApiKey:  document.getElementById('brave-api-key'),
-  btnSave:      document.getElementById('btn-save'),
-  msgSaved:     document.getElementById('msg-saved'),
+  braveApiKey:    document.getElementById('brave-api-key'),
+  languageSelect: document.getElementById('language-select'),
+  btnSave:        document.getElementById('btn-save'),
+  msgSaved:       document.getElementById('msg-saved'),
 
   // タブ
   tabBtns:   document.querySelectorAll('.tab-btn'),
@@ -31,10 +34,21 @@ const el = {
 // 初期化
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  await initI18n();
+  applyI18n();
   await loadSettings();
   await renderHistory();
   bindEvents();
 });
+
+/**
+ * data-i18n 属性を持つ要素に翻訳テキストを適用する
+ */
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // タブ切り替え
@@ -55,8 +69,9 @@ function bindTabEvents() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadSettings() {
-  const { braveApiKey = '' } = await chrome.storage.sync.get('braveApiKey');
+  const { braveApiKey = '', language = 'auto' } = await chrome.storage.sync.get(['braveApiKey', 'language']);
   el.braveApiKey.value = braveApiKey;
+  el.languageSelect.value = language;
 }
 
 async function saveSettings() {
@@ -64,13 +79,19 @@ async function saveSettings() {
     await chrome.storage.sync.set({
       braveApiKey:    el.braveApiKey.value.trim(),
       searchProvider: 'brave', // Tavily を使うよう固定
+      language:       el.languageSelect.value,
     });
+
+    // 言語変更を即時反映
+    await initI18n();
+    applyI18n();
+    await renderHistory();
 
     el.msgSaved.classList.add('show');
     setTimeout(() => el.msgSaved.classList.remove('show'), 3000);
   } catch (err) {
     console.error('[Preread] 設定の保存に失敗しました:', err);
-    alert(`設定の保存に失敗しました:\n${err.message}`);
+    alert(`${t('alert_save_error')}\n${err.message}`);
   }
 }
 
@@ -81,7 +102,9 @@ async function saveSettings() {
 async function renderHistory() {
   const { bookNotebookHistory = [] } = await chrome.storage.local.get('bookNotebookHistory');
 
-  el.historyCount.textContent = bookNotebookHistory.length > 0 ? `${bookNotebookHistory.length} 件` : '';
+  el.historyCount.textContent = bookNotebookHistory.length > 0
+    ? t('history_count', { n: bookNotebookHistory.length })
+    : '';
   el.btnClearAll.style.display = bookNotebookHistory.length > 0 ? '' : 'none';
 
   if (bookNotebookHistory.length === 0) {
@@ -108,15 +131,15 @@ async function renderHistory() {
     li.innerHTML = `
       <div class="history-item-info">
         <div class="history-item-title" title="${escapeHtml(entry.bookTitle || '')}">
-          ${escapeHtml(entry.bookTitle || '（タイトルなし）')}
+          ${escapeHtml(entry.bookTitle || t('no_title'))}
         </div>
-        ${dateStr ? `<div class="history-item-meta">${dateStr} に追加</div>` : ''}
+        ${dateStr ? `<div class="history-item-meta">${t('history_date_added', { date: dateStr })}</div>` : ''}
       </div>
       <div class="history-item-actions">
         <a class="btn-open-notebook" href="${escapeHtml(entry.notebookUrl || '#')}" target="_blank">
-          ${bookOpenIcon} NotebookLMで開く
+          ${bookOpenIcon} ${t('btn_open_notebook')}
         </a>
-        <button class="btn-delete-item" title="削除" data-asin="${escapeHtml(entry.asin || '')}">
+        <button class="btn-delete-item" title="${t('btn_delete_item_title')}" data-asin="${escapeHtml(entry.asin || '')}">
           ${trashIcon}
         </button>
       </div>
@@ -140,7 +163,7 @@ async function deleteHistoryEntry(asin) {
 }
 
 async function clearAllHistory() {
-  if (!confirm('追加済み書籍の履歴をすべて削除しますか？')) return;
+  if (!confirm(t('confirm_clear_all'))) return;
   await chrome.storage.local.set({ bookNotebookHistory: [] });
   await renderHistory();
 }

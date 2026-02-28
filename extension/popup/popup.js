@@ -11,6 +11,8 @@
 
 'use strict';
 
+import { initI18n, t } from '../i18n.js';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // DOM要素の取得（起動時に一括キャッシュ）
 // ═══════════════════════════════════════════════════════════════════════════
@@ -51,7 +53,7 @@ const el = {
 
   // 完了・エラーメッセージ
   msgSuccess: document.getElementById('msg-success'),
-  successCount: document.getElementById('success-count'),
+  msgSuccessText: document.getElementById('msg-success-text'),
   errorArea: document.getElementById('error-area'),
   listErrors: document.getElementById('list-errors'),
   btnRetryFailed: document.getElementById('btn-retry-failed'),
@@ -86,9 +88,26 @@ let failedUrls = [];
 // 初期化
 // ═══════════════════════════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', async () => {
+  await initI18n();
+  applyI18n();
   await init();
   bindEvents();
 });
+
+/**
+ * data-i18n 属性を持つ要素に翻訳テキストを適用する
+ */
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    el.textContent = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    el.placeholder = t(el.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    el.title = t(el.dataset.i18nTitle);
+  });
+}
 
 /**
  * 初期化処理
@@ -235,7 +254,7 @@ async function onSearchClick() {
   if (!title || title === '—') return;
 
   // UI：ローディング開始
-  showLoading('検索中...');
+  showLoading(t('loading_searching'));
   el.resultsSection.classList.add('hidden');
   clearResultLists();
 
@@ -268,7 +287,7 @@ async function onSearchClick() {
     if (err.message === 'NO_API_KEY') {
       el.msgNoApiKey.classList.remove('hidden');
     } else {
-      alert(`検索中にエラーが発生しました:\n${err.message}`);
+      alert(`${t('alert_search_error')}\n${err.message}`);
     }
   } finally {
     hideLoading();
@@ -298,7 +317,7 @@ function renderList(listEl, items, type) {
 
   if (items.length === 0) {
     const li = document.createElement('li');
-    li.textContent = '結果が見つかりませんでした';
+    li.textContent = t('no_results');
     li.style.color = 'var(--color-text-sub)';
     li.style.fontSize = '12px';
     li.style.padding = '6px 0';
@@ -327,7 +346,7 @@ function renderList(listEl, items, type) {
 
     const titleSpan = document.createElement('span');
     titleSpan.className = 'source-item-title';
-    titleSpan.textContent = item.title || '（タイトルなし）';
+    titleSpan.textContent = item.title || t('no_title');
     titleSpan.title = item.title;
 
     const urlSpan = document.createElement('span');
@@ -449,14 +468,14 @@ async function renderRecentBooks() {
 
     const title = document.createElement('span');
     title.className = 'recent-book-title';
-    title.textContent = entry.bookTitle || '（タイトルなし）';
+    title.textContent = entry.bookTitle || t('no_title');
     title.title = entry.bookTitle || '';
 
     const link = document.createElement('a');
     link.className = 'btn-open-notebook';
     link.href = entry.notebookUrl;
     link.target = '_blank';
-    link.innerHTML = `${openIcon} 開く`;
+    link.innerHTML = `${openIcon} ${t('recent_book_open')}`;
 
     li.appendChild(title);
     li.appendChild(link);
@@ -475,7 +494,7 @@ async function onCopyUrls() {
   const urls = getSelectedUrls();
 
   if (urls.length === 0) {
-    alert('URLが選択されていません');
+    alert(t('alert_no_urls_selected'));
     return;
   }
 
@@ -483,18 +502,18 @@ async function onCopyUrls() {
     await navigator.clipboard.writeText(urls.join('\n'));
 
     // コピー成功フィードバック: ボタンラベルを一時的に変更
-    const originalText = el.btnCopyUrls.textContent;
-    el.btnCopyUrls.textContent = '✅ コピーしました';
+    const btnSpan = el.btnCopyUrls.querySelector('[data-i18n]');
+    btnSpan.textContent = t('btn_copied');
     el.btnCopyUrls.disabled = true;
 
     setTimeout(() => {
-      el.btnCopyUrls.textContent = originalText;
+      btnSpan.textContent = t('btn_copy_urls');
       el.btnCopyUrls.disabled = false;
     }, 2000);
 
   } catch (err) {
     console.error('[Preread] clipboard error:', err);
-    alert('クリップボードへのコピーに失敗しました');
+    alert(t('alert_clipboard_error'));
   }
 }
 
@@ -510,7 +529,7 @@ async function onAddToNotebooklm(retryFailed = false) {
   const urls = retryFailed ? failedUrls : getSelectedUrls();
 
   if (urls.length === 0) {
-    alert(retryFailed ? '再試行するURLがありません' : 'URLが選択されていません');
+    alert(retryFailed ? t('alert_no_urls_to_retry') : t('alert_no_urls_selected'));
     return;
   }
 
@@ -536,7 +555,7 @@ async function onAddToNotebooklm(retryFailed = false) {
       showProgress(0, urls.length);
     } else {
       // NotebookLMが未開 or 一覧ページ → 自動作成する旨を先出し
-      showStatusMessage('NotebookLMを開いて新しいノートブックを自動作成中...');
+      showStatusMessage(t('status_creating_notebook'));
     }
   }
 
@@ -628,7 +647,7 @@ function onAllDone(successCount, errors) {
   el.progressArea.classList.add('hidden');
 
   if (successCount > 0) {
-    el.successCount.textContent = successCount;
+    el.msgSuccessText.textContent = t('msg_success_n', { n: successCount });
     el.msgSuccess.classList.remove('hidden');
   }
 
@@ -701,7 +720,7 @@ function showAddError(message) {
     line-height: 1.5;
     word-break: break-all;
   `;
-  div.innerHTML = `❌ NotebookLM追加エラー:<br>
+  div.innerHTML = `${t('error_add_notebooklm_label')}<br>
     <code style="font-size:11px;">${message}</code>`;
 
   el.resultsSection.querySelector('.action-buttons').after(div);
@@ -727,9 +746,9 @@ function showSearchWarning(errors) {
     color: #5f4c00;
     line-height: 1.5;
   `;
-  div.innerHTML = `⚠️ 一部の検索でエラーが発生しました:<br>
+  div.innerHTML = `${t('warning_search_partial')}<br>
     <code style="font-size:10px; word-break:break-all;">${errors.join('<br>')}</code><br>
-    APIキーのクォータ上限に達しているか、設定画面でAPIキーを確認してください。`;
+    ${t('warning_check_api_key')}`;
 
   // resultsSection の直前に挿入
   el.resultsSection.before(div);
@@ -741,14 +760,16 @@ function showSearchWarning(errors) {
  */
 function showStatusMessage(msg) {
   el.progressArea.classList.remove('hidden');
+  el.progressArea.dataset.isStatus = 'true';
   el.progressBarFill.classList.add('indeterminate');
   el.progressText.textContent = msg;
 }
 
 function hideStatusMessage() {
   el.progressBarFill.classList.remove('indeterminate');
-  if (el.progressText.textContent.includes('自動作成中')) {
+  if (el.progressArea.dataset.isStatus === 'true') {
     el.progressArea.classList.add('hidden');
+    delete el.progressArea.dataset.isStatus;
   }
 }
 
@@ -771,7 +792,8 @@ function showNotebookLink(url) {
   }
 }
 
-function showLoading(text = '処理中...') {
+function showLoading(text) {
+  if (text === undefined) text = t('loading_processing');
   el.loadingText.textContent = text;
   el.loading.classList.remove('hidden');
   el.btnSearch.disabled = true;
@@ -792,7 +814,7 @@ function showProgress(current, total) {
   el.progressBarFill.classList.remove('indeterminate');
   const pct = total > 0 ? Math.round((current / total) * 100) : 0;
   el.progressBarFill.style.width = `${pct}%`;
-  el.progressText.textContent = `${current} / ${total} 件追加中...`;
+  el.progressText.textContent = t('progress_text', { current, total });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
