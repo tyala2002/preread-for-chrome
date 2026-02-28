@@ -49,7 +49,7 @@ const STRINGS = {
     // ── options ──────────────────────────────────────────────────────
     options_page_title:        'Preread 設定',
     options_subtitle:          'APIキーと履歴を管理してください',
-    tab_api_keys:              'APIキー設定',
+    tab_api_keys:              '設定',
     tab_history:               '追加済み書籍',
     card_search_api_title:     'Web記事検索 APIキー',
     card_search_api_desc:      '書籍の要約・レビュー記事を検索するためのAPIキーです。',
@@ -110,7 +110,7 @@ const STRINGS = {
     // ── options ──────────────────────────────────────────────────────
     options_page_title:        'Preread Settings',
     options_subtitle:          'Manage your API keys and history',
-    tab_api_keys:              'API Keys',
+    tab_api_keys:              'Settings',
     tab_history:               'Added Books',
     card_search_api_title:     'Web Article Search API Key',
     card_search_api_desc:      'This API key is used to search for book summaries and reviews.',
