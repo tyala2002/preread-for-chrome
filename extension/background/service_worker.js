@@ -105,7 +105,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * @param {{ bookTitle: string }} payload
  * @returns {Promise<{ articles: SearchResult[], videos: SearchResult[] }>}
  */
-async function handleSearchSources({ bookTitle }) {
+async function handleSearchSources({ bookTitle, locale = 'ja' }) {
   // APIキーを取得
   const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider, braveApiKey } =
     await chrome.storage.sync.get([
@@ -125,8 +125,8 @@ async function handleSearchSources({ bookTitle }) {
 
   // Web記事とYouTube動画を並行して検索する
   const [articles, videos] = await Promise.allSettled([
-    searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider }),
-    searchYouTubeVideos(bookTitle, youtubeApiKey || null),
+    searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider, locale }),
+    searchYouTubeVideos(bookTitle, youtubeApiKey || null, locale),
   ]);
 
   const articleData = articles.status === 'fulfilled'
@@ -158,9 +158,11 @@ async function handleSearchSources({ bookTitle }) {
  * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string }} keys
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google' }) {
+async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google', locale = 'ja' }) {
   const queries = [
-    `${bookTitle} 要約 レビュー まとめ`,
+    locale === 'en'
+      ? `${bookTitle} review summary`
+      : `${bookTitle} 要約 レビュー まとめ`,
   ];
 
   const allResults = [];
@@ -172,9 +174,9 @@ async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchE
       if (braveApiKey) {
         results = await searchWithTavily(query, braveApiKey);
       } else if (searchProvider === 'serpapi') {
-        results = await searchWithSerpApi(query, searchApiKey);
+        results = await searchWithSerpApi(query, searchApiKey, locale);
       } else {
-        results = await searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId);
+        results = await searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId, locale);
       }
       allResults.push(...results);
     } catch (err) {
@@ -235,7 +237,7 @@ async function searchWithTavily(query, apiKey) {
  * @param {string} engineId
  * @returns {Promise<SearchResult[]>}
  */
-async function searchWithGoogleCustomSearch(query, apiKey, engineId) {
+async function searchWithGoogleCustomSearch(query, apiKey, engineId, locale = 'ja') {
   if (!engineId) {
     throw new Error('Google Custom Search: 検索エンジンID が設定されていません');
   }
@@ -245,7 +247,7 @@ async function searchWithGoogleCustomSearch(query, apiKey, engineId) {
     cx: engineId,
     q: query,
     num: '5',
-    lr: 'lang_ja',
+    lr: locale === 'en' ? 'lang_en' : 'lang_ja',
   });
 
   const response = await fetch(`${CUSTOM_SEARCH_API_URL}?${params}`);
@@ -268,11 +270,11 @@ async function searchWithGoogleCustomSearch(query, apiKey, engineId) {
  * @param {string} apiKey
  * @returns {Promise<SearchResult[]>}
  */
-async function searchWithSerpApi(query, apiKey) {
+async function searchWithSerpApi(query, apiKey, locale = 'ja') {
   const params = new URLSearchParams({
     api_key: apiKey,
     q: query,
-    hl: 'ja',
+    hl: locale === 'en' ? 'en' : 'ja',
     num: '5',
   });
 
@@ -297,14 +299,14 @@ async function searchWithSerpApi(query, apiKey) {
  * @param {string} apiKey
  * @returns {Promise<SearchResult[]>}
  */
-async function searchYouTubeViaApi(query, apiKey) {
+async function searchYouTubeViaApi(query, apiKey, locale = 'ja') {
   const params = new URLSearchParams({
     key: apiKey,
     part: 'snippet',
     q: query,
     type: 'video',
     maxResults: '5',
-    relevanceLanguage: 'ja',
+    relevanceLanguage: locale === 'en' ? 'en' : 'ja',
     order: 'relevance',
   });
 
@@ -329,12 +331,14 @@ async function searchYouTubeViaApi(query, apiKey) {
  * @param {string} query
  * @returns {Promise<SearchResult[]>}
  */
-async function searchYouTubeViaScraping(query) {
-  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&hl=ja`;
+async function searchYouTubeViaScraping(query, locale = 'ja') {
+  const hl = locale === 'en' ? 'en' : 'ja';
+  const acceptLang = locale === 'en' ? 'en,ja;q=0.9' : 'ja,en;q=0.9';
+  const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}&hl=${hl}`;
   const response = await fetch(url, {
     credentials: 'omit',
     headers: {
-      'Accept-Language': 'ja,en;q=0.9',
+      'Accept-Language': acceptLang,
     },
   });
 
@@ -464,11 +468,10 @@ function extractJsonObject(str, startIdx) {
  * @param {string|null} apiKey
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchYouTubeVideos(bookTitle, apiKey) {
-  const queries = [
-    `${bookTitle} 要約`,
-    `${bookTitle} 解説`,
-  ];
+async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja') {
+  const queries = locale === 'en'
+    ? [`${bookTitle} review`, `${bookTitle} book summary`]
+    : [`${bookTitle} 要約`, `${bookTitle} 解説`];
 
   const allResults = [];
   const errors = [];
@@ -477,9 +480,9 @@ async function searchYouTubeVideos(bookTitle, apiKey) {
     try {
       let results;
       if (apiKey) {
-        results = await searchYouTubeViaApi(query, apiKey);
+        results = await searchYouTubeViaApi(query, apiKey, locale);
       } else {
-        results = await searchYouTubeViaScraping(query);
+        results = await searchYouTubeViaScraping(query, locale);
       }
       allResults.push(...results);
     } catch (err) {

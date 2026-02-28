@@ -84,6 +84,9 @@ let currentAsin = null;
 /** 失敗したURLのリスト（再試行用） */
 let failedUrls = [];
 
+/** 現在のAmazonページのロケール（'ja' | 'en'） */
+let currentLocale = 'ja';
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 初期化
 // ═══════════════════════════════════════════════════════════════════════════
@@ -142,6 +145,9 @@ async function init() {
 
     // ASIN抽出
     currentAsin = extractAsin(tab.url);
+
+    // ロケール検出（amazon.com は英語、amazon.co.jp は日本語）
+    currentLocale = (tab.url?.includes('amazon.com') && !tab.url?.includes('amazon.co.jp')) ? 'en' : 'ja';
 
     // 追加済み書籍リストを表示
     await renderRecentBooks();
@@ -262,7 +268,7 @@ async function onSearchClick() {
     // background service workerにメッセージを送って検索実行
     const response = await sendMessage({
       type: 'SEARCH_SOURCES',
-      payload: { bookTitle: title },
+      payload: { bookTitle: title, locale: currentLocale },
     });
 
     if (response.error) {

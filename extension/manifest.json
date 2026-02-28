@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Preread - Amazon書籍 × NotebookLM 自動ソース追加",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Amazonの書籍ページを開いたとき、関連する要約・レビュー・YouTube解説動画をNotebookLMに自動追加します",
 
   "icons": {
