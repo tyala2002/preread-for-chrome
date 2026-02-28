@@ -15,7 +15,9 @@ dist-ssr
 # Private docs (drafts, launch plans)
 docs/note/
 docs/x/
+docs/i18n/
 docs/MONETIZATION_ROADMAP.md
+docs/store-listing-en.md
 CLAUDE.md
 extension/SS/
 
