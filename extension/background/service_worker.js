@@ -187,7 +187,7 @@ async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchE
   }
 
   return {
-    results: deduplicateAndFilter(allResults).slice(0, MAX_ARTICLE_RESULTS),
+    results: deduplicateAndFilter(allResults, locale).slice(0, MAX_ARTICLE_RESULTS),
     errors,
   };
 }
@@ -1075,14 +1075,17 @@ function forwardNotebookUrlToPopup(notebookUrl) {
  * @param {{ url: string, title: string }[]} results
  * @returns {{ url: string, title: string }[]}
  */
-function deduplicateAndFilter(results) {
+function deduplicateAndFilter(results, locale = 'ja') {
   const seen = new Set();
   return results.filter(item => {
     if (seen.has(item.url)) return false;
     seen.add(item.url);
     try {
       const domain = new URL(item.url).hostname.replace(/^www\./, '');
-      return !BLOCKED_DOMAINS.some(blocked => domain.includes(blocked));
+      if (BLOCKED_DOMAINS.some(blocked => domain.includes(blocked))) return false;
+      // 英語ロケールでは日本語ドメインを除外
+      if (locale === 'en' && (domain.endsWith('.co.jp') || domain.endsWith('.jp'))) return false;
+      return true;
     } catch {
       return false; // 無効なURLは除外
     }
