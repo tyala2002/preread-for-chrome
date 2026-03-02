@@ -1,0 +1,8 @@
+{
+  "name": {
+    "message": "Preread - Amazon書籍 × NotebookLM 自動ソース追加"
+  },
+  "description": {
+    "message": "Amazonの書籍ページを開いたとき、関連する要約・レビュー・YouTube解説動画をNotebookLMに自動追加します"
+  }
+}
