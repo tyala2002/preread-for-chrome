@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "User-Agent", "operation": "set", "value": "Mozilla/5.0" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||html.duckduckgo.com/",
+      "resourceTypes": ["xmlhttprequest"]
+    }
+  }
+]

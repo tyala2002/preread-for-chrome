@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "__MSG_name__",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "__MSG_description__",
   "default_locale": "ja",
 
@@ -53,8 +53,19 @@
     "scripting",
     "tabs",
     "clipboardWrite",
-    "notifications"
+    "notifications",
+    "declarativeNetRequest"
   ],
+
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_ddg_ua",
+        "enabled": true,
+        "path": "rules/ddg_ua.json"
+      }
+    ]
+  },
 
   "host_permissions": [
     "https://www.amazon.co.jp/*",
@@ -63,7 +74,8 @@
     "https://www.googleapis.com/*",
     "https://serpapi.com/*",
     "https://api.tavily.com/*",
-    "https://www.youtube.com/*"
+    "https://www.youtube.com/*",
+    "https://html.duckduckgo.com/*"
   ],
 
   "options_ui": {

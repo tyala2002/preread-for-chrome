@@ -32,6 +32,9 @@ const SERP_API_URL = 'https://serpapi.com/search.json';
 /** Tavily Search API のエンドポイント */
 const TAVILY_SEARCH_API_URL = 'https://api.tavily.com/search';
 
+/** DuckDuckGo HTML版のエンドポイント */
+const DUCKDUCKGO_HTML_URL = 'https://html.duckduckgo.com/html/';
+
 /** NotebookLM の URL */
 const NOTEBOOKLM_URL = 'https://notebooklm.google.com/';
 
@@ -55,11 +58,22 @@ const BLOCKED_DOMAINS = [
   'youtu.be',
 ];
 
-/** 検索するWeb記事の最大件数 */
+/** 検索するWeb記事の最大件数（デフォルト。設定で 5〜10 に変更可） */
 const MAX_ARTICLE_RESULTS = 5;
+const ARTICLE_RESULTS_MIN = 5;
+const ARTICLE_RESULTS_MAX = 10;
 
-/** 検索するYouTube動画の最大件数 */
+/** 検索するYouTube動画の最大件数（デフォルト。設定で 3〜8 に変更可） */
 const MAX_VIDEO_RESULTS = 3;
+const VIDEO_RESULTS_MIN = 3;
+const VIDEO_RESULTS_MAX = 8;
+
+/** 設定値を範囲内に収める */
+function clampInt(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(max, Math.max(min, Math.round(n)));
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // メッセージリスナー（メインルーター）
@@ -106,27 +120,34 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * @returns {Promise<{ articles: SearchResult[], videos: SearchResult[] }>}
  */
 async function handleSearchSources({ bookTitle, locale = 'ja' }) {
-  // APIキーを取得
-  const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider, braveApiKey } =
+  // APIキー・件数設定を取得
+  const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider, braveApiKey,
+          maxArticleResults, maxVideoResults } =
     await chrome.storage.sync.get([
       'youtubeApiKey',
       'searchApiKey',
       'searchEngineId',
       'searchProvider',
       'braveApiKey',
+      'maxArticleResults',
+      'maxVideoResults',
     ]);
 
-  const hasWebSearchKey = braveApiKey || searchApiKey;
-  if (!hasWebSearchKey) {
-    throw new Error('NO_API_KEY');
-  }
+  const hasWebSearchKey = !!braveApiKey; // 自前 Tavilyキー（上級者向け）
 
-  console.log(`[Preread SW] 検索開始: "${bookTitle}"`);
+  // 件数は設定値を範囲内にクランプ。未設定ならデフォルト。
+  const articleLimit = clampInt(maxArticleResults, ARTICLE_RESULTS_MIN, ARTICLE_RESULTS_MAX, MAX_ARTICLE_RESULTS);
+  const videoLimit = clampInt(maxVideoResults, VIDEO_RESULTS_MIN, VIDEO_RESULTS_MAX, MAX_VIDEO_RESULTS);
+
+  console.log(`[Preread SW] 検索開始: "${bookTitle}" (記事${articleLimit}件・動画${videoLimit}件)`);
 
   // Web記事とYouTube動画を並行して検索する
+  // キー未設定でも DuckDuckGo HTML版にフォールバックするため常に searchWebArticles を実行する
+  const articlePromise = searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider, locale, limit: articleLimit });
+
   const [articles, videos] = await Promise.allSettled([
-    searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider, locale }),
-    searchYouTubeVideos(bookTitle, youtubeApiKey || null, locale),
+    articlePromise,
+    searchYouTubeVideos(bookTitle, youtubeApiKey || null, locale, videoLimit),
   ]);
 
   const articleData = articles.status === 'fulfilled'
@@ -147,47 +168,68 @@ async function handleSearchSources({ bookTitle, locale = 'ja' }) {
 }
 
 /**
- * Web記事を検索する（Tavily / Google Custom Search / SerpAPI に対応）
+ * Web記事を検索する（DuckDuckGo（既定）/ Tavily / Google Custom Search / SerpAPI に対応）
  *
- * 優先順位: Tavily → Google Custom Search → SerpAPI
+ * 優先順位: Tavily（自前キーあり）→ SerpAPI → Google Custom Search → DuckDuckGo（既定・キー不要）
  *
  * 検索クエリ:
  *   - "{タイトル} 要約 レビュー まとめ"（1回の呼び出しで複合検索）
  *
  * @param {string} bookTitle
- * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string }} keys
+ * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string, locale?: string, limit?: number }} keys
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google', locale = 'ja' }) {
-  const queries = [
-    locale === 'en'
-      ? `${bookTitle} review summary`
-      : `${bookTitle} 要約 レビュー まとめ`,
-  ];
+async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google', locale = 'ja', limit = MAX_ARTICLE_RESULTS }) {
+  // 複数の観点に分けたクエリを別々に検索して結果を合算する。
+  // 1本のクエリに語を盛ると AND 条件で候補が狭まるだけなので、
+  // 狙いの違う独立クエリに散らすことで上位結果の多様性を増やす。
+  const queries = locale === 'en'
+    ? [
+        `${bookTitle} summary`,
+        `${bookTitle} review`,
+        `${bookTitle} key takeaways`,
+      ]
+    : [
+        `${bookTitle} 要約`,
+        `${bookTitle} 感想 書評`,
+        `${bookTitle} 解説`,
+      ];
+
+  // 1クエリ分の検索を実行する（プロバイダ選択は共通）
+  const runQuery = (query) => {
+    if (braveApiKey) {
+      // 自前 Tavily キーあり → 直接 Tavily（上級者・現状維持）
+      return searchWithTavily(query, braveApiKey);
+    } else if (searchProvider === 'serpapi' && searchApiKey) {
+      // SerpAPI キーあり
+      return searchWithSerpApi(query, searchApiKey, locale);
+    } else if (searchProvider === 'google' && searchApiKey && searchEngineId) {
+      // Google Custom Search キーあり
+      return searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId, locale);
+    }
+    // キー未設定（大多数の新規ユーザー）→ DuckDuckGo HTML版（既定・APIキー不要）
+    // DNRルール (rules/ddg_ua.json) がUAを "Mozilla/5.0" に書き換え済み。bot判定(202)を回避。
+    return searchWithDuckDuckGo(query, locale);
+  };
+
+  // 複数クエリを並列実行する（逐次だとクエリ本数分だけ遅くなるため）。
+  // 1本失敗しても他のクエリの結果は活かす。
+  const settled = await Promise.allSettled(queries.map(runQuery));
 
   const allResults = [];
   const errors = [];
-
-  for (const query of queries) {
-    try {
-      let results;
-      if (braveApiKey) {
-        results = await searchWithTavily(query, braveApiKey);
-      } else if (searchProvider === 'serpapi') {
-        results = await searchWithSerpApi(query, searchApiKey, locale);
-      } else {
-        results = await searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId, locale);
-      }
-      allResults.push(...results);
-    } catch (err) {
-      console.warn(`[Preread SW] Web記事検索エラー (${query}):`, err.message);
-      // 最初のクエリのエラーだけ収集（同じ原因が多いので代表1件）
-      if (errors.length === 0) errors.push(err.message);
+  for (const r of settled) {
+    if (r.status === 'fulfilled') {
+      allResults.push(...r.value);
+    } else {
+      console.warn('[Preread SW] Web記事検索エラー:', r.reason?.message);
+      // 代表エラー1件だけ収集（同じ原因が多いため）
+      if (errors.length === 0) errors.push(r.reason?.message ?? String(r.reason));
     }
   }
 
   return {
-    results: deduplicateAndFilter(allResults, locale).slice(0, MAX_ARTICLE_RESULTS),
+    results: deduplicateAndFilter(allResults, locale).slice(0, limit),
     errors,
   };
 }
@@ -290,6 +332,124 @@ async function searchWithSerpApi(query, apiKey, locale = 'ja') {
     url: item.link,
     snippet: item.snippet,
   }));
+}
+
+/**
+ * DuckDuckGo HTML版でWeb記事を検索する（APIキー不要・既定フォールバック）
+ *
+ * ⚠️ HTML構造変更注意ポイント:
+ *   DDG が result__a / result__snippet クラス名を変更すると 0件を返すようになる。
+ *   amazon.js の SELECTORS 定数と同様、変更リスクがあるため定期確認が必要。
+ *   0件の場合は無音で YouTube のみに縮退するため機能停止にはならない。
+ *
+ * 実装上の選択:
+ *   - credentials: 'omit' を使用（Cookie不要。簡略UA+Cookieなしで200を実測確認済み）
+ *   - User-Agent はfetchの禁止ヘッダのため直接設定不可。代わりに declarativeNetRequest
+ *     ルール (rules/ddg_ua.json) が html.duckduckgo.com 宛リクエストのUAを
+ *     "Mozilla/5.0" に書き換える。Chrome フルUAだと DDG が 202 を返すため DNR が必須。
+ *     Verified: Mozilla/5.0 → 200/10件、Chrome フルUA → 202/0件。
+ *   - Accept-Language はロケールに応じて設定する
+ *
+ * @param {string} query
+ * @param {string} locale - 'ja' | 'en'
+ * @returns {Promise<SearchResult[]>}
+ */
+async function searchWithDuckDuckGo(query, locale = 'ja') {
+  const kl = locale === 'en' ? 'us-en' : 'jp-jp';
+  const url = `${DUCKDUCKGO_HTML_URL}?q=${encodeURIComponent(query)}&kl=${kl}`;
+
+  const response = await fetch(url, {
+    credentials: 'omit', // Cookies not needed; verified 200 with simplified UA + no cookies.
+    // DDG returns 202 to full-Chrome-UA clients; a declarativeNetRequest rule
+    // (rules/ddg_ua.json) rewrites the User-Agent to "Mozilla/5.0" so this request gets 200.
+    // Verified: Mozilla/5.0 → 200/10 results, Chrome full-UA → 202/0 results.
+    // User-Agent cannot be set via fetch headers (forbidden header) — DNR is required.
+    headers: {
+      'Accept-Language': locale === 'en' ? 'en,ja;q=0.9' : 'ja,en;q=0.9',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`DuckDuckGo HTML検索エラー: ${response.status}`);
+  }
+
+  const html = await response.text();
+
+  // Simple content check: if result__a is absent, DDG returned a CAPTCHA/bot page
+  if (!html.includes('result__a')) {
+    throw new Error('DuckDuckGo: 検索結果が取得できませんでした（bot判定の可能性）');
+  }
+
+  return parseDuckDuckGoHtml(html);
+}
+
+/**
+ * DuckDuckGo HTML版のレスポンスから検索結果をパースする
+ *
+ * DOMParser は service worker で使用不可のため、正規表現でパースする
+ * （YouTube スクレイパーの parseYtInitialData と同じ方針）。
+ *
+ * HTML構造（2026年時点）:
+ *   <a class="result__a" href="//duckduckgo.com/l/?uddg=<encoded-url>&rut=...">タイトル</a>
+ *   <a class="result__snippet" ...>スニペット</a>
+ *
+ * @param {string} html
+ * @returns {{ title: string, url: string, snippet: string }[]}
+ */
+function parseDuckDuckGoHtml(html) {
+  const results = [];
+
+  // Extract result__a links (title + href)
+  const titleRegex = /<a[^>]+class="result__a"[^>]+href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+  // Extract result__snippet text
+  const snippetRegex = /<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+
+  const titles = [];
+  let m;
+  while ((m = titleRegex.exec(html)) !== null) {
+    const rawHref = m[1];
+    const rawTitle = m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const url = decodeDuckDuckGoRedirect(rawHref);
+    if (url && rawTitle) {
+      titles.push({ title: rawTitle, url });
+    }
+  }
+
+  const snippets = [];
+  while ((m = snippetRegex.exec(html)) !== null) {
+    snippets.push(m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim());
+  }
+
+  for (let i = 0; i < titles.length; i++) {
+    results.push({
+      title: titles[i].title,
+      url:   titles[i].url,
+      snippet: snippets[i] ?? '',
+    });
+  }
+
+  return results;
+}
+
+/**
+ * DuckDuckGo のリダイレクト href から実URLを復元する
+ *
+ * DDG HTML版の href は
+ *   //duckduckgo.com/l/?uddg=<encodeURIComponent(実URL)>&rut=...
+ * という形式。uddg パラメータを decodeURIComponent するだけで実URLが取れる。
+ *
+ * @param {string} href
+ * @returns {string|null}
+ */
+function decodeDuckDuckGoRedirect(href) {
+  try {
+    // Prepend https: if href starts with //
+    const fullUrl = href.startsWith('//') ? 'https:' + href : href;
+    const uddg = new URL(fullUrl).searchParams.get('uddg');
+    return uddg ? decodeURIComponent(uddg) : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -466,9 +626,11 @@ function extractJsonObject(str, startIdx) {
  *
  * @param {string} bookTitle
  * @param {string|null} apiKey
+ * @param {string} locale
+ * @param {number} limit - 返す動画の最大件数
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja') {
+async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja', limit = MAX_VIDEO_RESULTS) {
   const queries = locale === 'en'
     ? [`${bookTitle} review`, `${bookTitle} book summary`]
     : [`${bookTitle} 要約`, `${bookTitle} 解説`];
@@ -492,7 +654,7 @@ async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja') {
   }
 
   return {
-    results: deduplicateByUrl(allResults).slice(0, MAX_VIDEO_RESULTS),
+    results: deduplicateByUrl(allResults).slice(0, limit),
     errors,
   };
 }

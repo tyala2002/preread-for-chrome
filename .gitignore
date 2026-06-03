@@ -21,6 +21,9 @@ docs/store-listing*.md
 CLAUDE.md
 extension/SS/
 
+# Chrome auto-generated DNR ruleset cache
+extension/_metadata/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

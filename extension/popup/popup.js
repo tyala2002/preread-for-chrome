@@ -87,6 +87,9 @@ let failedUrls = [];
 /** 現在のAmazonページのロケール（'ja' | 'en'） */
 let currentLocale = 'ja';
 
+/** APIキーが設定されているかどうか */
+let hasApiKey = false;
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 初期化
 // ═══════════════════════════════════════════════════════════════════════════
@@ -148,6 +151,9 @@ async function init() {
 
     // ロケール検出（amazon.com は英語、amazon.co.jp は日本語）
     currentLocale = (tab.url?.includes('amazon.com') && !tab.url?.includes('amazon.co.jp')) ? 'en' : 'ja';
+
+    // 同じ本の検索結果がセッションに残っていれば復元（タブ切替・popup再開対策）
+    await restoreResultsFromSession();
 
     // 追加済み書籍リストを表示
     await renderRecentBooks();
@@ -286,15 +292,20 @@ async function onSearchClick() {
     }
 
     renderResults();
+    if (articleResults.length === 0) {
+      renderNoArticlesMessage();
+    }
+    // Persist results so they survive popup close / tab switch
+    await saveResultsToSession();
     el.resultsSection.classList.remove('hidden');
+    el.msgNoApiKey.classList.add('hidden');
+    el.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   } catch (err) {
     console.error('[Preread] search error:', err);
-    if (err.message === 'NO_API_KEY') {
-      el.msgNoApiKey.classList.remove('hidden');
-    } else {
-      alert(`${t('alert_search_error')}\n${err.message}`);
-    }
+    // NO_API_KEY is no longer a blocker — DuckDuckGo runs without a key.
+    // Treat it like any other error to avoid confusing the user.
+    alert(`${t('alert_search_error')}\n${err.message}`);
   } finally {
     hideLoading();
   }
@@ -350,10 +361,18 @@ function renderList(listEl, items, type) {
     const info = document.createElement('div');
     info.className = 'source-item-info';
 
-    const titleSpan = document.createElement('span');
+    const titleSpan = document.createElement('a');
     titleSpan.className = 'source-item-title';
     titleSpan.textContent = item.title || t('no_title');
     titleSpan.title = item.title;
+    // Open the source in a new tab. Use chrome.tabs to keep the popup open
+    // (a plain target=_blank would close the popup and lose the results).
+    titleSpan.href = item.url;
+    titleSpan.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation(); // do not toggle the row checkbox
+      chrome.tabs.create({ url: item.url, active: false });
+    });
 
     const urlSpan = document.createElement('span');
     urlSpan.className = 'source-item-url';
@@ -386,6 +405,20 @@ function renderList(listEl, items, type) {
 }
 
 /**
+ * Web記事が0件だったときのメッセージを表示する。
+ * 記事検索は組み込みのWeb検索で動くため、キー設定の案内は出さない。
+ */
+function renderNoArticlesMessage() {
+  el.listArticles.innerHTML = '';
+  const li = document.createElement('li');
+  li.style.cssText = 'list-style:none; padding: 8px 0;';
+  li.innerHTML = `
+    <p style="font-size:12px; color:var(--color-text-sub);">${t('no_articles_found')}</p>
+  `;
+  el.listArticles.appendChild(li);
+}
+
+/**
  * 結果リストの内容をクリアする
  */
 function clearResultLists() {
@@ -394,6 +427,53 @@ function clearResultLists() {
   el.msgSuccess.classList.add('hidden');
   el.errorArea.classList.add('hidden');
   el.progressArea.classList.add('hidden');
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 検索結果のセッション保持
+//   popup は閉じるたびに破棄されるため、検索結果を chrome.storage.session に
+//   ASIN 単位で保存し、同じ本を開き直したときに復元する。
+//   session ストレージはブラウザを閉じると消えるので鮮度の問題が出ない。
+// ═══════════════════════════════════════════════════════════════════════════
+
+/** セッション保存のキー（ASIN 単位） */
+function resultsKey(asin) {
+  return `searchResults:${asin}`;
+}
+
+/** 現在の検索結果を session ストレージに保存する */
+async function saveResultsToSession() {
+  if (!currentAsin) return;
+  try {
+    await chrome.storage.session.set({
+      [resultsKey(currentAsin)]: { articleResults, videoResults, savedAt: Date.now() },
+    });
+  } catch (err) {
+    console.warn('[Preread] 検索結果の保存に失敗:', err.message);
+  }
+}
+
+/**
+ * session ストレージから現在の ASIN の検索結果を復元して描画する。
+ * @returns {Promise<boolean>} 復元した場合 true
+ */
+async function restoreResultsFromSession() {
+  if (!currentAsin) return false;
+  try {
+    const stored = await chrome.storage.session.get(resultsKey(currentAsin));
+    const data = stored[resultsKey(currentAsin)];
+    if (!data || (!data.articleResults?.length && !data.videoResults?.length)) {
+      return false;
+    }
+    articleResults = data.articleResults || [];
+    videoResults = data.videoResults || [];
+    renderResults();
+    el.resultsSection.classList.remove('hidden');
+    return true;
+  } catch (err) {
+    console.warn('[Preread] 検索結果の復元に失敗:', err.message);
+    return false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -877,17 +957,15 @@ async function fetchBookTitle(tabId) {
 }
 
 /**
- * APIキーが設定されているかを確認し、未設定の場合は警告を表示する
+ * Tavily APIキーが設定されているかを確認する。
+ * 未設定でも DuckDuckGo で動作するため、メッセージはエラーではなく任意のヒントとして表示する。
  */
 async function checkApiKeys() {
   const { braveApiKey } = await chrome.storage.sync.get('braveApiKey');
-  if (!braveApiKey) {
-    el.msgNoApiKey.classList.remove('hidden');
-    el.btnSearch.disabled = true;
-  } else {
-    el.msgNoApiKey.classList.add('hidden');
-    el.btnSearch.disabled = false;
-  }
+  hasApiKey = !!braveApiKey;
+  // Key is optional: DuckDuckGo search works without it.
+  // Always hide the info banner on load — no required-key messaging.
+  el.msgNoApiKey.classList.add('hidden');
 }
 
 /**
