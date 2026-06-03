@@ -30,10 +30,6 @@ const el = {
   loading: document.getElementById('loading'),
   loadingText: document.getElementById('loading-text'),
 
-  // APIキー未設定警告
-  msgNoApiKey: document.getElementById('msg-no-api-key'),
-  btnGoOptions: document.getElementById('btn-go-options'),
-
   // 検索結果エリア
   resultsSection: document.getElementById('results-section'),
   btnSelectAll: document.getElementById('btn-select-all'),
@@ -86,9 +82,6 @@ let failedUrls = [];
 
 /** 現在のAmazonページのロケール（'ja' | 'en'） */
 let currentLocale = 'ja';
-
-/** APIキーが設定されているかどうか */
-let hasApiKey = false;
 
 // ═══════════════════════════════════════════════════════════════════════════
 // 初期化
@@ -143,9 +136,6 @@ async function init() {
       enterEditMode();
     }
 
-    // APIキーの設定確認
-    await checkApiKeys();
-
     // ASIN抽出
     currentAsin = extractAsin(tab.url);
 
@@ -199,8 +189,6 @@ function bindEvents() {
     chrome.runtime.openOptionsPage();
   });
 
-  // 設定画面へ誘導ボタン（APIキー未設定時）
-  el.btnGoOptions.addEventListener('click', () => chrome.runtime.openOptionsPage());
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -298,7 +286,6 @@ async function onSearchClick() {
     // Persist results so they survive popup close / tab switch
     await saveResultsToSession();
     el.resultsSection.classList.remove('hidden');
-    el.msgNoApiKey.classList.add('hidden');
     el.resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   } catch (err) {
@@ -954,18 +941,6 @@ async function fetchBookTitle(tabId) {
     console.warn('[Preread] fetchBookTitle error:', err);
     return null;
   }
-}
-
-/**
- * Tavily APIキーが設定されているかを確認する。
- * 未設定でも DuckDuckGo で動作するため、メッセージはエラーではなく任意のヒントとして表示する。
- */
-async function checkApiKeys() {
-  const { braveApiKey } = await chrome.storage.sync.get('braveApiKey');
-  hasApiKey = !!braveApiKey;
-  // Key is optional: DuckDuckGo search works without it.
-  // Always hide the info banner on load — no required-key messaging.
-  el.msgNoApiKey.classList.add('hidden');
 }
 
 /**

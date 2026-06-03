@@ -20,18 +20,6 @@
 // 定数
 // ═══════════════════════════════════════════════════════════════════════════
 
-/** YouTube Data API v3 のエンドポイント */
-const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
-
-/** Google Custom Search API のエンドポイント */
-const CUSTOM_SEARCH_API_URL = 'https://www.googleapis.com/customsearch/v1';
-
-/** SerpAPI のエンドポイント */
-const SERP_API_URL = 'https://serpapi.com/search.json';
-
-/** Tavily Search API のエンドポイント */
-const TAVILY_SEARCH_API_URL = 'https://api.tavily.com/search';
-
 /** DuckDuckGo HTML版のエンドポイント */
 const DUCKDUCKGO_HTML_URL = 'https://html.duckduckgo.com/html/';
 
@@ -120,20 +108,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  * @returns {Promise<{ articles: SearchResult[], videos: SearchResult[] }>}
  */
 async function handleSearchSources({ bookTitle, locale = 'ja' }) {
-  // APIキー・件数設定を取得
-  const { youtubeApiKey, searchApiKey, searchEngineId, searchProvider, braveApiKey,
-          maxArticleResults, maxVideoResults } =
+  // 件数設定を取得
+  const { maxArticleResults, maxVideoResults } =
     await chrome.storage.sync.get([
-      'youtubeApiKey',
-      'searchApiKey',
-      'searchEngineId',
-      'searchProvider',
-      'braveApiKey',
       'maxArticleResults',
       'maxVideoResults',
     ]);
-
-  const hasWebSearchKey = !!braveApiKey; // 自前 Tavilyキー（上級者向け）
 
   // 件数は設定値を範囲内にクランプ。未設定ならデフォルト。
   const articleLimit = clampInt(maxArticleResults, ARTICLE_RESULTS_MIN, ARTICLE_RESULTS_MAX, MAX_ARTICLE_RESULTS);
@@ -141,13 +121,12 @@ async function handleSearchSources({ bookTitle, locale = 'ja' }) {
 
   console.log(`[Preread SW] 検索開始: "${bookTitle}" (記事${articleLimit}件・動画${videoLimit}件)`);
 
-  // Web記事とYouTube動画を並行して検索する
-  // キー未設定でも DuckDuckGo HTML版にフォールバックするため常に searchWebArticles を実行する
-  const articlePromise = searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider, locale, limit: articleLimit });
+  // Web記事(DuckDuckGo・キー不要)とYouTube動画(スクレイピング・キー不要)を並行検索
+  const articlePromise = searchWebArticles(bookTitle, { locale, limit: articleLimit });
 
   const [articles, videos] = await Promise.allSettled([
     articlePromise,
-    searchYouTubeVideos(bookTitle, youtubeApiKey || null, locale, videoLimit),
+    searchYouTubeVideos(bookTitle, locale, videoLimit),
   ]);
 
   const articleData = articles.status === 'fulfilled'
@@ -168,18 +147,16 @@ async function handleSearchSources({ bookTitle, locale = 'ja' }) {
 }
 
 /**
- * Web記事を検索する（DuckDuckGo（既定）/ Tavily / Google Custom Search / SerpAPI に対応）
- *
- * 優先順位: Tavily（自前キーあり）→ SerpAPI → Google Custom Search → DuckDuckGo（既定・キー不要）
+ * Web記事を検索する（APIキー不要の DuckDuckGo HTML版を使用）
  *
  * 検索クエリ:
- *   - "{タイトル} 要約 レビュー まとめ"（1回の呼び出しで複合検索）
+ *   - 3観点に分割（要約 / 感想 書評 / 解説）して並列検索し合算
  *
  * @param {string} bookTitle
- * @param {{ braveApiKey?: string, searchApiKey?: string, searchEngineId?: string, searchProvider?: string, locale?: string, limit?: number }} keys
+ * @param {{ locale?: string, limit?: number }} opts
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchEngineId, searchProvider = 'google', locale = 'ja', limit = MAX_ARTICLE_RESULTS }) {
+async function searchWebArticles(bookTitle, { locale = 'ja', limit = MAX_ARTICLE_RESULTS }) {
   // 複数の観点に分けたクエリを別々に検索して結果を合算する。
   // 1本のクエリに語を盛ると AND 条件で候補が狭まるだけなので、
   // 狙いの違う独立クエリに散らすことで上位結果の多様性を増やす。
@@ -195,22 +172,9 @@ async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchE
         `${bookTitle} 解説`,
       ];
 
-  // 1クエリ分の検索を実行する（プロバイダ選択は共通）
-  const runQuery = (query) => {
-    if (braveApiKey) {
-      // 自前 Tavily キーあり → 直接 Tavily（上級者・現状維持）
-      return searchWithTavily(query, braveApiKey);
-    } else if (searchProvider === 'serpapi' && searchApiKey) {
-      // SerpAPI キーあり
-      return searchWithSerpApi(query, searchApiKey, locale);
-    } else if (searchProvider === 'google' && searchApiKey && searchEngineId) {
-      // Google Custom Search キーあり
-      return searchWithGoogleCustomSearch(query, searchApiKey, searchEngineId, locale);
-    }
-    // キー未設定（大多数の新規ユーザー）→ DuckDuckGo HTML版（既定・APIキー不要）
-    // DNRルール (rules/ddg_ua.json) がUAを "Mozilla/5.0" に書き換え済み。bot判定(202)を回避。
-    return searchWithDuckDuckGo(query, locale);
-  };
+  // 各クエリを DuckDuckGo HTML版（APIキー不要）で検索する。
+  // DNRルール (rules/ddg_ua.json) がUAを "Mozilla/5.0" に書き換え済み。bot判定(202)を回避。
+  const runQuery = (query) => searchWithDuckDuckGo(query, locale);
 
   // 複数クエリを並列実行する（逐次だとクエリ本数分だけ遅くなるため）。
   // 1本失敗しても他のクエリの結果は活かす。
@@ -235,107 +199,7 @@ async function searchWebArticles(bookTitle, { braveApiKey, searchApiKey, searchE
 }
 
 /**
- * Tavily Search API でWeb記事を検索する
- *
- * ⚠️ API変更注意ポイント:
- *   エンドポイントやレスポンス形式が変わった場合はここを更新する。
- *
- * @param {string} query
- * @param {string} apiKey
- * @returns {Promise<SearchResult[]>}
- */
-async function searchWithTavily(query, apiKey) {
-  const response = await fetch(TAVILY_SEARCH_API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      api_key: apiKey,
-      query,
-      search_depth: 'basic',
-      max_results: 10,
-      include_answer: false,
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Tavily APIエラー: ${response.status} - ${err.message || ''}`);
-  }
-
-  const data = await response.json();
-  return (data.results || []).map(item => ({
-    title: item.title,
-    url: item.url,
-    snippet: item.content,
-  }));
-}
-
-/**
- * Google Custom Search API で検索する
- * @param {string} query
- * @param {string} apiKey
- * @param {string} engineId
- * @returns {Promise<SearchResult[]>}
- */
-async function searchWithGoogleCustomSearch(query, apiKey, engineId, locale = 'ja') {
-  if (!engineId) {
-    throw new Error('Google Custom Search: 検索エンジンID が設定されていません');
-  }
-
-  const params = new URLSearchParams({
-    key: apiKey,
-    cx: engineId,
-    q: query,
-    num: '5',
-    lr: locale === 'en' ? 'lang_en' : 'lang_ja',
-  });
-
-  const response = await fetch(`${CUSTOM_SEARCH_API_URL}?${params}`);
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`Google Custom Search APIエラー: ${response.status} - ${err.error?.message || ''}`);
-  }
-
-  const data = await response.json();
-  return (data.items || []).map(item => ({
-    title: item.title,
-    url: item.link,
-    snippet: item.snippet,
-  }));
-}
-
-/**
- * SerpAPI で検索する
- * @param {string} query
- * @param {string} apiKey
- * @returns {Promise<SearchResult[]>}
- */
-async function searchWithSerpApi(query, apiKey, locale = 'ja') {
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    q: query,
-    hl: locale === 'en' ? 'en' : 'ja',
-    num: '5',
-  });
-
-  const response = await fetch(`${SERP_API_URL}?${params}`);
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`SerpAPIエラー: ${response.status} - ${err.error || ''}`);
-  }
-
-  const data = await response.json();
-  return (data.organic_results || []).map(item => ({
-    title: item.title,
-    url: item.link,
-    snippet: item.snippet,
-  }));
-}
-
-/**
- * DuckDuckGo HTML版でWeb記事を検索する（APIキー不要・既定フォールバック）
+ * DuckDuckGo HTML版でWeb記事を検索する（APIキー不要）
  *
  * ⚠️ HTML構造変更注意ポイント:
  *   DDG が result__a / result__snippet クラス名を変更すると 0件を返すようになる。
@@ -453,40 +317,7 @@ function decodeDuckDuckGoRedirect(href) {
 }
 
 /**
- * YouTube Data API v3 で動画を検索する（API直接呼び出し）
- *
- * @param {string} query
- * @param {string} apiKey
- * @returns {Promise<SearchResult[]>}
- */
-async function searchYouTubeViaApi(query, apiKey, locale = 'ja') {
-  const params = new URLSearchParams({
-    key: apiKey,
-    part: 'snippet',
-    q: query,
-    type: 'video',
-    maxResults: '5',
-    relevanceLanguage: locale === 'en' ? 'en' : 'ja',
-    order: 'relevance',
-  });
-
-  const response = await fetch(`${YOUTUBE_API_URL}?${params}`);
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error(`YouTube APIエラー: ${response.status} - ${err.error?.message || ''}`);
-  }
-
-  const data = await response.json();
-  return (data.items || []).map(item => ({
-    title: item.snippet.title,
-    url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
-    snippet: item.snippet.description,
-    thumbnail: item.snippet.thumbnails?.default?.url,
-  }));
-}
-
-/**
- * YouTubeの検索結果ページをfetchして動画を取得する（スクレイピングフォールバック）
+ * YouTubeの検索結果ページをfetchして動画を取得する（APIキー不要・スクレイピング）
  *
  * @param {string} query
  * @returns {Promise<SearchResult[]>}
@@ -625,12 +456,11 @@ function extractJsonObject(str, startIdx) {
  *   - "{タイトル} 解説"
  *
  * @param {string} bookTitle
- * @param {string|null} apiKey
  * @param {string} locale
  * @param {number} limit - 返す動画の最大件数
  * @returns {Promise<{ results: SearchResult[], errors: string[] }>}
  */
-async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja', limit = MAX_VIDEO_RESULTS) {
+async function searchYouTubeVideos(bookTitle, locale = 'ja', limit = MAX_VIDEO_RESULTS) {
   const queries = locale === 'en'
     ? [`${bookTitle} review`, `${bookTitle} book summary`]
     : [`${bookTitle} 要約`, `${bookTitle} 解説`];
@@ -640,12 +470,7 @@ async function searchYouTubeVideos(bookTitle, apiKey, locale = 'ja', limit = MAX
 
   for (const query of queries) {
     try {
-      let results;
-      if (apiKey) {
-        results = await searchYouTubeViaApi(query, apiKey, locale);
-      } else {
-        results = await searchYouTubeViaScraping(query, locale);
-      }
+      const results = await searchYouTubeViaScraping(query, locale);
       allResults.push(...results);
     } catch (err) {
       console.warn(`[Preread SW] YouTube検索エラー (${query}):`, err.message);

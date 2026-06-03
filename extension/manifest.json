@@ -71,9 +71,6 @@
     "https://www.amazon.co.jp/*",
     "https://www.amazon.com/*",
     "https://notebooklm.google.com/*",
-    "https://www.googleapis.com/*",
-    "https://serpapi.com/*",
-    "https://api.tavily.com/*",
     "https://www.youtube.com/*",
     "https://html.duckduckgo.com/*"
   ],

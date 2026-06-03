@@ -2,7 +2,6 @@
  * options/options.js — Preread 設定ページスクリプト
  *
  * 責務:
- *   - Tavily APIキーの読み込み・保存
  *   - 追加済み書籍履歴（bookNotebookHistory）の表示・削除
  */
 
@@ -14,13 +13,11 @@ import { initI18n, t } from '../i18n.js';
 // DOM要素の取得
 // ═══════════════════════════════════════════════════════════════════════════
 const el = {
-  braveApiKey:    document.getElementById('brave-api-key'),
   languageSelect: document.getElementById('language-select'),
   maxArticles:    document.getElementById('max-article-results'),
   maxVideos:      document.getElementById('max-video-results'),
   btnSave:        document.getElementById('btn-save'),
   msgSaved:       document.getElementById('msg-saved'),
-  setupBanner:    document.getElementById('setup-banner'),
 
   // タブ
   tabBtns:   document.querySelectorAll('.tab-btn'),
@@ -72,22 +69,16 @@ function bindTabEvents() {
 // ═══════════════════════════════════════════════════════════════════════════
 
 async function loadSettings() {
-  const { braveApiKey = '', language = 'auto', maxArticleResults = 5, maxVideoResults = 3 } =
-    await chrome.storage.sync.get(['braveApiKey', 'language', 'maxArticleResults', 'maxVideoResults']);
-  el.braveApiKey.value = braveApiKey;
+  const { language = 'auto', maxArticleResults = 5, maxVideoResults = 3 } =
+    await chrome.storage.sync.get(['language', 'maxArticleResults', 'maxVideoResults']);
   el.languageSelect.value = language;
   el.maxArticles.value = String(maxArticleResults);
   el.maxVideos.value = String(maxVideoResults);
-  // Tavily upsell banner is always hidden: built-in web search is enough.
-  // The key field stays in the DOM (hidden) for backward compatibility.
-  el.setupBanner.style.display = 'none';
 }
 
 async function saveSettings() {
   try {
     await chrome.storage.sync.set({
-      braveApiKey:    el.braveApiKey.value.trim(),
-      searchProvider: 'brave', // Tavily を使うよう固定
       language:       el.languageSelect.value,
       maxArticleResults: Number(el.maxArticles.value),
       maxVideoResults:   Number(el.maxVideos.value),
