@@ -3,6 +3,6 @@
     "message": "Preread - Amazon書籍 × NotebookLM 自動ソース追加"
   },
   "description": {
-    "message": "Amazonの書籍ページを開いたとき、関連する要約・レビュー・YouTube解説動画をNotebookLMに自動追加します"
+    "message": "Amazonの書籍ページを開くだけで、YouTube解説動画・要約・レビュー記事を自動収集しNotebookLMにワンクリック追加。APIキー不要、設定なしですぐ使えます。"
   }
 }
